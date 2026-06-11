@@ -7,6 +7,16 @@
 
 ---
 
+## Secrets (LEARNED THE HARD WAY — S116)
+
+0. **NEVER put real secret VALUES in any tracked file** — that includes `.claude/*.md`,
+   `TASKS.md`, `README.md`, anything committed. GitGuardian flagged a leaked Postgres
+   URL + Railway token I wrote into `.claude/WORKFLOW.md`. Secrets live ONLY in `.env`
+   (gitignored) and the Desktop keys doc (outside the repo). In docs, use placeholders
+   like `<DB_PASSWORD>`, `<RAILWAY_API_TOKEN>`. If you leak one: redact, `git commit
+   --amend` (if in HEAD) or filter history, `git push --force`, **and ROTATE the
+   credential** — scrubbing history does NOT un-expose a public secret.
+
 ## Deploy / Infra
 
 1. **Railway does NOT auto-deploy from GitHub.** A `git push` does nothing on Railway.
