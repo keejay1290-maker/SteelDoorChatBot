@@ -8,7 +8,7 @@
 
 ## SESSION CONTEXT (update each session)
 
-**Last session:** 2026-06-11 (S113) — PRICE-001 done (admin pricing table, SQLite-backed, version history, 28f8ba7)
+**Last session:** 2026-06-11 (S114) — CONTENT-001/002/003 done (Our Story, Our Process, Shop overlay), sticky nav, mobile sheet-bar fix (9d21148, 728e5dd)
 **Server:** `http://localhost:8000` (dev) | `http://localhost:8000/dashboard` (dashboard, auth: admin/steeldoor)
 **Admin pricing:** `http://localhost:8000/admin/pricing` (same basic auth)
 **Stack:** Python 3.12 + FastAPI 0.4.0 + SQLite + Vercel serverless
@@ -127,19 +127,19 @@
   - Regex `_extract_fields()` always runs first; LLM only fills gaps; never overwrites existing values
   - Silent fallback on any LLM error; mock provider path unchanged
 
-- [ ] **CONTENT-001** — "Our Story" / About section on homepage (S113 notes)
+- [x] **CONTENT-001** — "Our Story" / About section on homepage (S114 9d21148)
   - Founders: Sam Hackett (manufacturing family since 1985, Leamore Windows) + Josh (Grow.Online digital agency)
   - "Doing Things The Right Way" — 5 values bullets (treat every customer same, fast comms, no pressure sales, transparent pricing, Josh's bad bifold experience origin story)
   - Location: Unit C, Scarlet Court, Stafford, ST16 1YJ | T: 01785526016 | E: sales@steeldoorcompany.co.uk
   - Source text saved in TASKS.md — do NOT re-scrape, use verbatim copy below
   - Add as collapsible section or separate scrollable panel below the product tiles
 
-- [ ] **CONTENT-002** — "Our Process" section on homepage
+- [x] **CONTENT-002** — "Our Process" section on homepage (S114 9d21148)
   - Scrape https://steeldoorcompany.co.uk/pages/our-process
   - Add step-by-step visual timeline: Enquiry → Survey → Design → Manufacture → Install → Aftercare
   - Should live above the footer
 
-- [ ] **CONTENT-003** — Shop / product browse function
+- [x] **CONTENT-003** — Shop / product browse function (S114 9d21148)
   - Lightweight product listing page showing all 5 door types with price-from, key specs, and CTA to chat
   - Use CATALOGUE data from catalogue.py — no new scraping needed for data
   - Route: `/shop` or modal triggered from "Browse Products" button
