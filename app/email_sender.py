@@ -7,7 +7,7 @@ Required env vars (all must be set for email to send):
     SMTP_HOST   e.g. smtp.gmail.com
     SMTP_USER   e.g. noreply@yourdomain.com
     SMTP_PASS   app password or SMTP credential
-    SALES_EMAIL  recipient (default: sales@steeldoorcompany.co.uk)
+    SALES_EMAIL  recipient (default: sales@demo.steeldoorco.com)
 
 Optional:
     SMTP_PORT   default 587 (STARTTLS)
@@ -44,7 +44,7 @@ def send_brief_email(
 
     smtp_port = int(os.environ.get("SMTP_PORT", "587"))
     from_addr = os.environ.get("EMAIL_FROM", smtp_user).strip()
-    sales_email = os.environ.get("SALES_EMAIL", "sales@steeldoorcompany.co.uk").strip()
+    sales_email = os.environ.get("SALES_EMAIL", "sales@demo.steeldoorco.com").strip()
 
     name_part = customer_name or "Unknown"
     route_part = (routing or "sales").upper()
