@@ -336,10 +336,15 @@ def _mock_reply(s: ConversationSession, quote: Optional[QuoteResponse], text: st
 
     if intent == "greeting":
         name_part = f", {s.name}" if s.name else ""
+        if s.door_type:
+            known_spec = s.door_type.replace("_", " ") + (" door" if "room" not in s.door_type else "")
+            return (
+                f"Hi{name_part}! Good to have you back. We were looking at a {known_spec} — "
+                "shall we pick up where we left off, or start fresh?"
+            )
         return (
-            f"Hi{name_part}! I'm the Steel Door Company AI consultant. I can get you an instant estimate or "
-            "answer any questions about our range.\n\n"
-            "What are you looking for today — a quote, product info, or to book a survey?"
+            f"Hi{name_part}! Good to hear from you — what can I help you with today? "
+            "I can get you a quick price, answer product questions, or book a free site survey."
         )
 
     if intent == "thanks":
@@ -395,52 +400,56 @@ def _mock_reply(s: ConversationSession, quote: Optional[QuoteResponse], text: st
         missing = _what_is_missing(s)
         contact_missing = [m for m in missing if any(w in m for w in ("name", "email", "phone", "postcode"))]
         if contact_missing:
-            return f"Glad to hear it! To get things moving, could I take **{contact_missing[0]}**?"
+            next_contact = contact_missing[0]
+            if "name" in next_contact:
+                return "Great — what name should I put on the quote?"
+            if "email" in next_contact:
+                name_part = f"{s.name}, w" if s.name else "W"
+                return f"{name_part}hat's the best email to send the quote to?"
+            if "phone" in next_contact:
+                return "What's the best number to reach you on?"
+            return f"What's your postcode? It helps the team schedule your free site survey."
         if s.quote_reference:
             return (
-                f"Your enquiry (ref **{s.quote_reference}**) has been noted. "
-                "The team will be in touch within 1 business day to schedule your free site survey."
+                f"All noted{', ' + s.name if s.name else ''}. The team will be in touch within 1 business day "
+                "to arrange your free site survey. Is there anything else you'd like to know?"
             )
-        return "Could you give me a bit more detail about the door you need so I can get a quote together?"
+        return "I'd love to get a quote together for you — what kind of door are you looking for?"
 
-    # --- Proactive contact nudge (article insight: 90% prefer personalized experience) ---
-    # When spec is taking shape but customer hasn't shared contact, pivot earlier
+    # --- Proactive contact nudge ---
     if 40 <= s.readiness_score <= 65 and not s.email and s.door_type and not quote:
         name_part = f" {s.name}" if s.name else ""
         return (
-            f"Great progress{name_part}! Before we go further — what email address should I send "
-            "the quote to? I'll make sure you have a copy the moment it's ready."
+            f"We're making good progress{name_part}. What's the best email to send the quote to? "
+            "I'll have a copy ready for you as soon as we're done."
         )
 
     # --- Spec-related messages — ask for next missing field ---
     missing = _what_is_missing(s)
     if not missing:
         return (
-            f"I think I have everything — readiness **{s.readiness_score}/100**. "
-            "One moment while I prepare your quote and internal brief..."
+            "I think I have everything I need. One moment while I put your quote together..."
         )
 
     next_field = missing[0]
-    # Build known-so-far string for context
+    # Acknowledge what we already know, then ask the next question
     known = []
     if s.door_set:    known.append(s.door_set + " leaf")
     if s.door_type:   known.append(s.door_type.replace("_", " "))
     if s.mechanism:   known.append(s.mechanism)
     if s.width_mm:    known.append(f"{int(s.width_mm)}×{int(s.height_mm or 0)}mm")
-    if s.name:        known.append(f"for {s.name}")
-    known_ctx = " (" + ", ".join(known) + ")" if known else ""
 
     question_map = {
-        "door type":        "What type of door are you looking for? Options: **internal, external, fire-rated (FD30/FD60), or wine room**.",
-        "single or double": "Would you prefer a **single** or **double** leaf door?",
-        "mechanism":        "What's your preferred opening mechanism — **hinged, sliding**, or **concertina** (folding)?",
-        "opening size":     "What's the opening size? Width × height in mm works best (e.g. 900×2100 for a standard single).",
-        "quantity":         "How many doors do you need in total?",
-        "glazing":          "Any glazing preference? We offer **clear, reeded, frosted**, or bespoke glass.",
-        "your name":        "Could I take your name to put on the quote?",
-        "your email":       "What email address should I send the quote to?",
-        "your phone":       "A phone number would help our survey team reach you — optional though.",
-        "your postcode":    "Last one — what's your postcode? Helps us schedule the free site survey.",
+        "door type":        "What type of door are you after? We do **internal, external, fire-rated (FD30/FD60)**, or wine room doors.",
+        "single or double": "Is that a **single** or **double** leaf door?",
+        "mechanism":        "And how should it open — **hinged, sliding**, or **concertina** (bi-fold)?",
+        "opening size":     "What size is the opening? Width × height in mm is ideal — a standard single is usually 900×2100.",
+        "quantity":         "How many doors do you need?",
+        "glazing":          "Any glass? We can do **clear, reeded, frosted**, or fully bespoke glazing — or none at all.",
+        "your name":        "Just so I can personalise the quote — what's your name?",
+        "your email":       "What's the best email to send the quote to?",
+        "your phone":       "A contact number would help the survey team — what's best for you?",
+        "your postcode":    "Almost there — what's your postcode? It helps us schedule the free site survey.",
     }
 
     question = next(
@@ -448,10 +457,10 @@ def _mock_reply(s: ConversationSession, quote: Optional[QuoteResponse], text: st
         f"Could you confirm {next_field}?"
     )
 
-    progress_n = 10 - len(missing)
-    progress = f"({progress_n}/10 details collected{known_ctx})"
-
-    return f"{question} {progress}"
+    if known:
+        ack = "Got it — " + ", ".join(known) + ". "
+        return ack + question
+    return question
 
 
 # ---------------------------------------------------------------------------
@@ -504,12 +513,13 @@ def _build_system_prompt(s: ConversationSession, missing: list[str]) -> str:
         "\n\nSTILL NEEDED (ask for these in order): " + missing_str + "\n\n"
         "RULES:\n"
         "1. NEVER invent prices. Only relay the [QUOTE FROM DETERMINISTIC ENGINE] block verbatim when it appears.\n"
-        "2. Ask for ONE missing piece of info at a time — don't list all missing fields.\n"
-        "3. If message is 'help', 'what can you do', or similar — describe capabilities, do NOT ask about door type.\n"
-        "4. If message asks for contact details / phone / address — give: 01785 526016 | sales@steeldoorcompany.co.uk | Unit C Scarlet Court Stafford ST16 1YJ.\n"
-        "5. Recognise spelling mistakes: qoute=quote, fd3=FD30, dbl=double, ext=external, int=internal.\n"
-        "6. Keep responses to 2-4 sentences. Be warm, professional, knowledgeable.\n"
-        "7. Readiness: " + str(s.readiness_score) + "/100. If no [QUOTE] block in the message, don't mention or repeat a quote."
+        "2. Ask for ONE missing piece of info at a time — never list all missing fields at once.\n"
+        "3. If the message is ambiguous or looks like a typo, infer the most likely intent and proceed — don't ask them to repeat themselves. E.g. 'interal'→internal, 'dubble'→double, 'hinjed'→hinged.\n"
+        "4. NEVER show a progress counter like '(0/10 details collected)' — it sounds robotic.\n"
+        "5. If message is 'help' or similar — describe what you can do, don't ask about door type.\n"
+        "6. Contact details: 01785 526016 | sales@steeldoorcompany.co.uk | Unit C Scarlet Court Stafford ST16 1YJ.\n"
+        "7. Be warm and natural — like a knowledgeable colleague, not a form. 2-3 sentences max per reply.\n"
+        "8. Readiness: " + str(s.readiness_score) + "/100. Only mention the quote if a [QUOTE] block appears in the message."
     )
 
 
@@ -678,6 +688,14 @@ def _normalise_text(text: str) -> str:
         r"\bwhat'?s\s+the\s+number\b": "what is the phone number",
         r"\bdoors?\s+pls\b": "doors please",
         r"\bsingle\s+door\s+pls\b": "single door please",
+        # common internal/external typos
+        r"\binteral\b": "internal", r"\bintrnal\b": "internal",
+        r"\binternel\b": "internal", r"\binternal\b": "internal",
+        r"\bextenal\b": "external", r"\bexternl\b": "external",
+        r"\bexterior\b": "external",
+        r"\bfier\s*rat": "fire rated", r"\bfireated\b": "fire rated",
+        r"\bdoubl\b": "double", r"\bsingl\b": "single",
+        r"\bhineg\b": "hinged", r"\bsldin\b": "sliding",
     }
     t = text.lower()
     for pat, rep in replacements.items():
@@ -813,4 +831,4 @@ def handle_chat(req: ChatRequest) -> ChatResponse:
         missing_fields=missing[:5],
     )
 
-    return ChatResponse(reply=reply, quote=quote, session=session_state)
+    return ChatResponse(reply=reply, quote=quote if new_quote else None, session=session_state)
