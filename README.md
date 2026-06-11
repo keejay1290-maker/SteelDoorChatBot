@@ -3,7 +3,7 @@
 > **Live demo:** https://steel-door-chat-bot.vercel.app
 > **Dashboard:** https://steel-door-chat-bot.vercel.app/dashboard (admin / steeldoor)
 > **Admin pricing:** https://steel-door-chat-bot.vercel.app/admin/pricing
-> **Last updated:** 2026-06-11 (S114)
+> **Last updated:** 2026-06-11
 
 An AI-powered sales consultant and quoting system built for **Steel Door Company** — the UK's leading installer of bespoke steel doors. Designed to replace phone enquiries end-to-end: capturing customer details, producing accurate estimates, routing leads to the right team, and pushing qualified leads into HubSpot CRM.
 

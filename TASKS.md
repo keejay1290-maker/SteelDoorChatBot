@@ -8,7 +8,7 @@
 
 ## SESSION CONTEXT (update each session)
 
-**Last session:** 2026-06-11 (S114) — CONTENT-001/002/003 done (Our Story, Our Process, Shop overlay), sticky nav, mobile sheet-bar fix (9d21148, 728e5dd)
+**Last session:** 2026-06-11 — CONTENT-001/002/003 done (Our Story, Our Process, Shop overlay), sticky nav, mobile sheet-bar fix (9d21148, 728e5dd)
 **Server:** `http://localhost:8000` (dev) | `http://localhost:8000/dashboard` (dashboard, auth: admin/steeldoor)
 **Admin pricing:** `http://localhost:8000/admin/pricing` (same basic auth)
 **Stack:** Python 3.12 + FastAPI 0.4.0 + SQLite + Vercel serverless
