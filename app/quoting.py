@@ -8,7 +8,7 @@ The LLM never sets prices. This engine does, line by line.
 """
 from __future__ import annotations
 
-import uuid
+import hashlib
 
 from .catalogue import CATALOGUE
 from .models import QuoteRequest, QuoteResponse, QuoteLine
@@ -99,8 +99,16 @@ def _area_m2(width_mm: float, height_mm: float) -> float:
     return (width_mm / 1000.0) * (height_mm / 1000.0)
 
 
-def _quote_reference() -> str:
-    return "SDA-" + uuid.uuid4().hex[:8].upper()
+def _quote_reference(req: "QuoteRequest") -> str:
+    """Deterministic ref: same spec → same reference (enables dedupe + new_quote detection)."""
+    key = "|".join(str(x) for x in (
+        req.door_set, req.door_type, req.mechanism,
+        int(req.width_mm), int(req.height_mm), req.glass,
+        req.ral_colour or "", req.fire_rating, req.side_panels,
+        req.threshold, req.quantity,
+    ))
+    digest = hashlib.sha1(key.encode()).hexdigest()[:8].upper()
+    return f"SDA-{digest}"
 
 
 def calculate_quote(req: QuoteRequest) -> QuoteResponse:
@@ -178,7 +186,7 @@ def calculate_quote(req: QuoteRequest) -> QuoteResponse:
     notes.append("Delivery and installation priced separately after survey.")
 
     return QuoteResponse(
-        reference=_quote_reference(),
+        reference=_quote_reference(req),
         product_name=product["name"],
         lines=lines,
         unit_price=unit_price,

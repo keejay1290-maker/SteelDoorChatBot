@@ -1,7 +1,7 @@
 """Tests for the deterministic quoting engine (Steel Door Company model)."""
 from app.catalogue import CATALOGUE
 from app.models import QuoteRequest
-from app.quoting import PRICING, calculate_quote, _area_m2
+from app.quoting import PRICING, calculate_quote, _area_m2, _quote_reference
 
 
 def test_area_m2():
@@ -151,3 +151,16 @@ def test_lead_time_present():
     req = QuoteRequest(door_set="double")
     q = calculate_quote(req)
     assert q.lead_time
+
+
+def test_quote_reference_is_deterministic():
+    """Same spec must always produce the same reference (fixes BUG-A + BUG-B)."""
+    req_a = QuoteRequest(door_set="single", door_type="external", width_mm=900, height_mm=2100)
+    req_b = QuoteRequest(door_set="single", door_type="external", width_mm=900, height_mm=2100)
+    req_c = QuoteRequest(door_set="double", door_type="internal", width_mm=1500, height_mm=2100)
+    assert _quote_reference(req_a) == _quote_reference(req_b)
+    assert _quote_reference(req_a) != _quote_reference(req_c)
+    # Reference format unchanged
+    ref = _quote_reference(req_a)
+    assert ref.startswith("SDA-")
+    assert len(ref) == 12
