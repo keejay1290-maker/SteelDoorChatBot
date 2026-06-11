@@ -25,6 +25,7 @@
   ],
   "env": {
     "LLM_PROVIDER": "groq",
-    "ENQUIRY_DB": "/tmp/enquiries.db"
+    "ENQUIRY_DB": "/tmp/enquiries.db",
+    "SEED_DEMO": "1"
   }
 }
