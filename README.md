@@ -1,7 +1,8 @@
 # SteelDoorAi — AI Sales Consultant
 
-> **Live demo:** *(link added after deployment)*
-> **Last updated:** 2026-06-11 (S107)
+> **Live demo:** https://steel-door-chat-bot.vercel.app
+> **Dashboard:** https://steel-door-chat-bot.vercel.app/dashboard
+> **Last updated:** 2026-06-11 (S108)
 
 An AI-powered sales consultant and quoting assistant for **Steel Door Company** — the UK's leading installer of bespoke steel doors. Designed to replace phone enquiries, capture customer details, produce accurate estimates, and route leads to the correct team.
 
