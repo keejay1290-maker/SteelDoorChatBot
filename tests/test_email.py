@@ -100,3 +100,89 @@ def test_brief_email_sent_flag_set_in_session():
 
     s = ConversationSession()
     assert s.brief_email_sent is False
+
+
+# ---------------------------------------------------------------------------
+# EMAIL-002 — customer quote email
+# ---------------------------------------------------------------------------
+
+from app.email_sender import send_customer_quote_email  # noqa: E402
+from app.models import QuoteRequest  # noqa: E402
+from app.quoting import calculate_quote  # noqa: E402
+
+
+def _make_quote():
+    req = QuoteRequest(door_set="single", door_type="external", width_mm=900, height_mm=2100)
+    return calculate_quote(req)
+
+
+def test_customer_quote_email_skipped_when_no_smtp():
+    with patch.dict(os.environ, {"SMTP_HOST": "", "SMTP_USER": "", "SMTP_PASS": ""}, clear=False):
+        result = send_customer_quote_email(
+            customer_email="customer@example.com",
+            customer_name="John",
+            quote=_make_quote(),
+        )
+    assert result is False
+
+
+def test_customer_quote_email_sent_to_customer(monkeypatch):
+    monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+    monkeypatch.setenv("SMTP_USER", "bot@example.com")
+    monkeypatch.setenv("SMTP_PASS", "secret")
+
+    mock_server = MagicMock()
+    mock_server.__enter__ = MagicMock(return_value=mock_server)
+    mock_server.__exit__ = MagicMock(return_value=False)
+
+    with patch("app.email_sender.smtplib.SMTP", MagicMock(return_value=mock_server)):
+        result = send_customer_quote_email(
+            customer_email="customer@example.com",
+            customer_name="Alice",
+            quote=_make_quote(),
+        )
+
+    assert result is True
+    mock_server.sendmail.assert_called_once()
+    _, to_addrs, _ = mock_server.sendmail.call_args[0]
+    assert "customer@example.com" in to_addrs
+
+
+def test_customer_quote_email_body_contains_quote_fields(monkeypatch):
+    import email as _email_module
+
+    monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+    monkeypatch.setenv("SMTP_USER", "bot@example.com")
+    monkeypatch.setenv("SMTP_PASS", "secret")
+
+    captured = {}
+    mock_server = MagicMock()
+    mock_server.__enter__ = MagicMock(return_value=mock_server)
+    mock_server.__exit__ = MagicMock(return_value=False)
+    mock_server.sendmail.side_effect = lambda f, t, m: captured.update({"msg": m})
+
+    quote = _make_quote()
+    with patch("app.email_sender.smtplib.SMTP", MagicMock(return_value=mock_server)):
+        send_customer_quote_email(
+            customer_email="customer@example.com",
+            customer_name="Bob",
+            quote=quote,
+        )
+
+    # Parse the MIME message and walk parts to get the decoded plain-text body
+    parsed = _email_module.message_from_string(captured["msg"])
+    body = ""
+    for part in parsed.walk():
+        if part.get_content_type() == "text/plain":
+            raw = part.get_payload(decode=True)
+            if raw:
+                body += raw.decode("utf-8")
+    assert quote.reference in body
+    assert "Bob" in body
+    assert "TOTAL INC. VAT" in body
+
+
+def test_customer_email_sent_flag_starts_false():
+    from app.session import ConversationSession
+    s = ConversationSession()
+    assert s.customer_email_sent is False

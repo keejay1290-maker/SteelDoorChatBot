@@ -8,11 +8,12 @@
 
 ## SESSION CONTEXT (update each session)
 
-**Last session:** S109 (2026-06-11)
-**Server:** `http://localhost:8000` (dev) | `http://localhost:8000/dashboard` (dashboard)
-**Stack:** Python 3.12 + FastAPI 0.4.0 + SQLite + Playwright
-**Tests:** 36/36 passing
+**Last session:** S110 (2026-06-11) — Full UPGRADE_PLAN.md executed (Phases 0-3)
+**Server:** `http://localhost:8000` (dev) | `http://localhost:8000/dashboard` (dashboard, auth: admin/steeldoor)
+**Stack:** Python 3.12 + FastAPI 0.4.0 + SQLite + Vercel serverless
+**Tests:** 67/67 passing
 **LLM:** Set `LLM_PROVIDER=groq` + `GROQ_API_KEY=gsk_...` in `.env` for real AI
+**Live:** https://steel-door-chat-bot.vercel.app
 
 ---
 
@@ -51,16 +52,16 @@
   - `session.brief_email_sent` flag prevents duplicate sends
   - 5 tests in `tests/test_email.py` (mock SMTP)
 
-- [ ] **EMAIL-002** — Email quote PDF confirmation to customer
-  - Trigger: when quote is generated AND customer email is collected
-  - Content: branded HTML email with quote card + lead time + Steel Door Company contact
-  - Priority: lower than EMAIL-001
+- [x] **EMAIL-002** — Email quote PDF confirmation to customer (S110)
+  - Trigger: confirmation intent + `s.email` + `s.quote_reference` present, `customer_email_sent` flag prevents repeats
+  - `send_customer_quote_email()` in `app/email_sender.py`; plain-text branded summary, graceful no-op if SMTP unconfigured
+  - `session.customer_email_sent` persisted to SQLite
 
-- [ ] **PDF-001** — PDF quote generation
-  - Library: `weasyprint` (HTML→PDF) or `reportlab`
-  - Route: `GET /api/quote/{reference}/pdf`
-  - Content: A4 branded quote with SDC logo, itemised lines, T&Cs, signature area
-  - Download link shown in quote card UI
+- [x] **PDF-001** — PDF quote generation (S110)
+  - `app/pdf.py` — `build_quote_pdf(quote) -> bytes` via reportlab (pure Python, works on Vercel)
+  - Route: `GET /api/quote/{reference}/pdf` → `application/pdf`
+  - "Download PDF" button added to quote card in `index.html`
+  - A4, SDC gold branding, itemised lines, VAT table, disclaimer footer
 
 ### 🟡 HIGH — Sales Product Value
 
@@ -95,11 +96,10 @@
   - Payload: JSON brief + quote ref + routing
   - Configurable `WEBHOOK_URL` in env
 
-- [ ] **AI-007** — LLM-powered structured extraction (fallback to regex)
-  - Use function calling / tool use to extract all session fields in one LLM call
-  - Returns validated JSON, merged into session
-  - Regex remains as fallback when LLM is mock or call fails
-  - Provider: Groq function-calling, DeepSeek JSON mode, Claude tool-use
+- [x] **AI-007** — LLM-powered structured extraction (fallback to regex) (S110)
+  - `_llm_extract_fields()` in `chat.py` — JSON-mode one-shot call, merges only fields regex missed
+  - Regex `_extract_fields()` always runs first; LLM only fills gaps; never overwrites existing values
+  - Silent fallback on any LLM error; mock provider path unchanged
 
 - [ ] **AI-008** — RAG on Steel Door Company product specs
   - Embed: fire rating certificates, building regs docs, technical spec PDFs
@@ -150,9 +150,9 @@
   - Replace print() with structlog or Python logging JSON formatter
   - Include: session_id, readiness_score, routing, LLM provider, latency
 
-- [ ] **AUTH-001** — Dashboard auth
-  - Basic HTTP auth on `/dashboard` (configurable `DASHBOARD_USER` / `DASHBOARD_PASS`)
-  - No customer-facing auth needed for demo
+- [x] **AUTH-001** — Dashboard auth (S110)
+  - HTTPBasic on `/dashboard`, `/api/dashboard/stats`, `/api/dashboard/sessions`
+  - `secrets.compare_digest`, env `DASHBOARD_USER` / `DASHBOARD_PASS` (default admin/steeldoor)
 
 - [ ] **DEPLOY-001** — Railway / Fly.io deployment
   - Dockerfile already exists
@@ -187,9 +187,8 @@
 - [ ] **BUG-002** — `_extract_fields` budget parser fails on "£8k" (lowercase k)
   - Fix: normalise lowercase k → multiply by 1000 before parse
 
-- [ ] **BUG-003** — Sessions table not created in test context until first write
-  - Workaround in place (init on first write) but init_db() should be called in test fixtures
-  - Fix: add conftest.py with `@pytest.fixture(autouse=True)` calling `init_db()`
+- [x] **BUG-003** — Sessions table not created in test context until first write (S110)
+  - Fixed: `tests/conftest.py` autouse session-scoped fixture calls `init_db()` on test collection
 
 - [ ] **BUG-004** — `test_chat_endpoint_accepts_history` sends "how much for a double door?" with no
   door_type → defaults to internal. Consider: if only door_set detected, don't generate quote, ask type instead.
