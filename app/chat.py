@@ -11,9 +11,12 @@ LLM providers: mock (default) | groq | deepseek
 """
 from __future__ import annotations
 
+import logging
 import os
 import re
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 from .catalogue import CATALOGUE
 from .models import ChatRequest, ChatResponse, QuoteRequest, QuoteResponse, SessionState
@@ -305,6 +308,11 @@ def _classify_intent(t: str) -> str:
     # Help
     if any(w in t for w in ("help", "what can you do", "what do you do", "how does this work", "what are you")):
         return "help"
+    # Product info / pricing curiosity
+    if any(w in t for w in ("most expensive", "cheapest", "cheapest", "cheapest option", "most affordable",
+                             "difference between", "what is fd30", "what is fd60", "what's fd", "what are",
+                             "how does", "tell me about", "explain", "what types", "options available")):
+        return "product_info"
     # Confirmation / booking
     if any(w in t for w in ("yes", "yeah", "yep", "ok", "okay", "sure", "book", "schedule", "proceed", "let's go", "go ahead", "sounds good")):
         return "confirmation"
@@ -333,6 +341,32 @@ def _mock_reply(s: ConversationSession, quote: Optional[QuoteResponse], text: st
 
     if intent == "help":
         return _HELP_TEXT
+
+    if intent == "product_info":
+        if "most expensive" in t or "expensive" in t:
+            return (
+                "Our most premium option is the **Wine Room door** (from £2,300 base) followed by "
+                "**fire-rated FD60** (from £3,400 inc. rated glass and specialist fitting). "
+                "Fire-rated doors also carry the biggest uplift if you add sliding mechanism or bespoke glazing. "
+                "Want a quote on one of those, or something more budget-friendly?"
+            )
+        if "cheapest" in t or "affordable" in t or "budget" in t:
+            return (
+                "Our most affordable entry point is a **standard single internal door** — from £1,700 + VAT, "
+                "hinged, with clear glass and a standard RAL colour. "
+                "Size, glazing, and finish all affect the final number — want me to price one up for you?"
+            )
+        if "difference" in t and ("fd30" in t or "fd60" in t or "fire" in t):
+            return (
+                "**FD30** gives 30 minutes of fire resistance — the minimum for most building regs. "
+                "**FD60** gives 60 minutes and is required for commercial corridors, stairwells, and some insurance policies. "
+                "FD60 adds around £250 more than FD30. Which are you looking at?"
+            )
+        return (
+            "We make four types: **internal** (residential or commercial), **external** (weatherproofed, with threshold), "
+            "**fire-rated** (FD30 or FD60, fully certified), and **wine room** (insulated, bespoke). "
+            "All are made to measure in any RAL colour. Which sounds right for your project?"
+        )
 
     if intent == "greeting":
         name_part = f", {s.name}" if s.name else ""
@@ -688,12 +722,16 @@ def _normalise_text(text: str) -> str:
         r"\bwhat'?s\s+the\s+number\b": "what is the phone number",
         r"\bdoors?\s+pls\b": "doors please",
         r"\bsingle\s+door\s+pls\b": "single door please",
-        # common internal/external typos
+        # internal/external typos
         r"\binteral\b": "internal", r"\bintrnal\b": "internal",
-        r"\binternel\b": "internal", r"\binternal\b": "internal",
+        r"\binternel\b": "internal",
         r"\bextenal\b": "external", r"\bexternl\b": "external",
         r"\bexterior\b": "external",
+        # fire door typos — frie/feir/fery/firy/fry/fier/frie door
+        r"\b(frie|feir|fery|firy|fier|fyre)\b": "fire",
+        r"\bfr[iy]e?\s*door\b": "fire door",
         r"\bfier\s*rat": "fire rated", r"\bfireated\b": "fire rated",
+        # double/single/hinge typos
         r"\bdoubl\b": "double", r"\bsingl\b": "single",
         r"\bhineg\b": "hinged", r"\bsldin\b": "sliding",
     }
@@ -805,9 +843,11 @@ def handle_chat(req: ChatRequest) -> ChatResponse:
         try:
             system_prompt = _build_system_prompt(s, missing)
             reply = _openai_compatible_reply(provider, system_prompt, req.history, user_content)
-        except Exception:
+        except Exception as exc:
+            logger.warning("LLM call failed (%s), falling back to mock: %s", provider, exc)
             reply = _mock_reply(s, quote if new_quote else None, req.message, new_quote)
     else:
+        logger.debug("No LLM key for provider=%s, using mock", provider)
         reply = _mock_reply(s, quote if new_quote else None, req.message, new_quote)
 
     # Persist session
