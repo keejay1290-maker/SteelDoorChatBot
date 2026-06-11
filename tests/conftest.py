@@ -1,8 +1,9 @@
 import os
 
 # Safety: tests ALWAYS run against local SQLite, never the production Postgres.
-# Pop DATABASE_URL before any app module imports app.db (which reads it at import).
+# Pop both vars before any app module imports app.db (which reads them at import).
 os.environ.pop("DATABASE_URL", None)
+os.environ.pop("POSTGRES_URL", None)
 
 import pytest
 from app.store import init_db

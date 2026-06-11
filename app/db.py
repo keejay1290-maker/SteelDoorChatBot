@@ -14,7 +14,10 @@ import os
 import sqlite3
 from pathlib import Path
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+# DATABASE_URL is the primary switch. Also accept POSTGRES_URL, which the
+# Supabase–Vercel integration injects automatically (pooled connection). Never
+# use POSTGRES_URL_NON_POOLING — that is the IPv6 direct connection.
+DATABASE_URL = (os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL") or "").strip()
 IS_POSTGRES = DATABASE_URL.startswith("postgres")
 
 DB_PATH = Path(os.environ.get("ENQUIRY_DB", "enquiries.db"))
