@@ -8,17 +8,17 @@
 
 ## SESSION CONTEXT (update each session)
 
-**Last session:** 2026-06-11 (S116) — AI-008 RAG done, CODE-03/01 dead imports removed, Railway env vars set, 121 tests passing
+**Last session:** 2026-06-11 (S116) — AI-008 RAG done + full Opus audit (30 checks). Fixed SEC-03/SEC-04/COR-04/CODE-05. 131 tests passing
 **Server:** `http://localhost:8000` (dev) | `http://localhost:8000/dashboard` (dashboard, auth: admin/steeldoor)
 **Admin pricing:** `http://localhost:8000/admin/pricing` (same basic auth)
 **Stack:** Python 3.12 + FastAPI 0.111.0 + SQLite + Vercel serverless
-**Tests:** 99 passing (run: `cd app && ../.venv/Scripts/pytest ../tests -q`)
+**Tests:** 131 passing, 2 skipped (run: `.\.venv\Scripts\python.exe -m pytest tests/ -q`)
 **LLM:** GROQ active — `llama-3.3-70b-versatile`, key set in .env, multi-model fallback active
 **Live (Vercel):** https://steel-door-chat-bot.vercel.app
 **Railway URL:** https://steeldoorchatbot-production.up.railway.app (LIVE — /health returns ok)
 **Railway project ID:** 9410b36f-1864-495e-8652-265258687098 | Service: 377437d8 | Env: ac0f4b9c
 **Railway deploy cmd:** `RAILWAY_API_TOKEN=ddd08363-... railway up --detach` (does NOT auto-deploy from GitHub push — use CLI)
-**Next priorities:** Opus/Fable audit pass (all 25 checks in .claude/AUDIT-FOR-OPUS.md), then remaining nice-to-haves
+**Next priorities:** Owner-decision items from audit (SEC-02 session-endpoint PII auth, PERF-02 extraction guard, PROD-02/03 Vercel env verify), then Phase-2 nice-to-haves (WhatsApp, email parse, vision)
 
 ---
 
