@@ -23,6 +23,7 @@ from .catalogue import CATALOGUE
 from .models import ChatRequest, ChatResponse, QuoteRequest, QuoteResponse, SessionState
 from .store import save_llm_metric
 from .quoting import PRICING, calculate_quote
+from .rag import format_rag_context, retrieve as rag_retrieve
 from .session import (
     ConversationSession,
     build_internal_brief,
@@ -516,7 +517,7 @@ def _mock_reply(s: ConversationSession, quote: Optional[QuoteResponse], text: st
 # LLM system prompt
 # ---------------------------------------------------------------------------
 
-def _build_system_prompt(s: ConversationSession, missing: list[str]) -> str:
+def _build_system_prompt(s: ConversationSession, missing: list[str], rag_context: str = "") -> str:
     products = []
     for key, p in CATALOGUE.items():
         products.append(
@@ -595,14 +596,16 @@ def _build_system_prompt(s: ConversationSession, missing: list[str]) -> str:
         ("\n".join(f"  {l}" for l in session_summary) if session_summary else "  Nothing collected yet") +
         "\n\nSTILL NEEDED (collect gently, one at a time): " + missing_str + "\n\n"
 
-        "OPERATIONAL RULES:\n"
+        + (("\n\n" + rag_context) if rag_context else "")
+        + "\n\nOPERATIONAL RULES:\n"
         "1. NEVER invent or estimate prices. Only relay a [QUOTE FROM DETERMINISTIC ENGINE] block verbatim when one appears — never before.\n"
         "2. Collect ONE missing detail per message — weave the question naturally into your reply, never list them.\n"
         "3. NEVER show a progress counter — it sounds robotic and impersonal.\n"
         "4. If the customer says 'help' — warmly explain what you can assist with, don't immediately ask about door type.\n"
         "5. If a [QUOTE] block appears, present it clearly and offer to book a free survey as the natural next step.\n"
         "6. Keep replies to 2–4 sentences. Concise but warm — never curt, never a wall of text.\n"
-        "7. Readiness score (internal only, never mention): " + str(s.readiness_score) + "/100."
+        "7. Readiness score (internal only, never mention): " + str(s.readiness_score) + "/100.\n"
+        "8. If TECHNICAL SPECIFICATIONS appear above, cite the source in your answer: 'According to [source], ...'."
     )
 
 
@@ -877,7 +880,6 @@ def handle_chat(req: ChatRequest) -> ChatResponse:
         from .hubspot import push_to_hubspot
         _qt = quote.total if quote else None
         fire_webhook(build_internal_brief_json(s, quote_total=_qt))
-        import sys as _sys
         hs_ok = push_to_hubspot(s, quote_total=_qt)
         if not hs_ok:
             token_set = bool(os.environ.get("HUBSPOT_ACCESS_TOKEN"))
@@ -930,7 +932,9 @@ def handle_chat(req: ChatRequest) -> ChatResponse:
 
     if cfg and os.environ.get(cfg["key_env"]):
         try:
-            system_prompt = _build_system_prompt(s, missing)
+            rag_chunks = rag_retrieve(normalised)
+            rag_ctx = format_rag_context(rag_chunks)
+            system_prompt = _build_system_prompt(s, missing, rag_context=rag_ctx)
             reply = _openai_compatible_reply(provider, system_prompt, req.history, user_content, session_id=s.session_id)
         except Exception as exc:
             logger.warning("LLM call failed (%s), falling back to mock: %s", provider, exc)

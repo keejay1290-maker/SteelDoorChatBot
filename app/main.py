@@ -14,7 +14,6 @@ except ImportError:
 
 class _JsonFormatter(logging.Formatter):
     """Emit each log record as a single JSON line for structured log ingestion."""
-    import json as _json
 
     def format(self, record: logging.LogRecord) -> str:
         import json, traceback as tb

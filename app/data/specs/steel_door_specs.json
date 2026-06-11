@@ -1,0 +1,122 @@
+[
+  {
+    "title": "FD30 Fire Door Standard",
+    "source": "BS 476-22 / BS EN 1634-1",
+    "content": "FD30 (Fire Door 30) provides 30 minutes of fire and smoke resistance. Required for most residential escape routes under Building Regulations Part B. Tested to BS 476-22 or BS EN 1634-1. Must include a self-closing device, intumescent smoke seals on all four sides, and certified fire door hardware. FD30S suffix indicates additional cold smoke seals for ambient smoke control.",
+    "weight": 2.0
+  },
+  {
+    "title": "FD60 Fire Door Standard",
+    "source": "BS 476-22 / BS EN 1634-1",
+    "content": "FD60 (Fire Door 60) provides 60 minutes of fire resistance. Required for commercial corridors, stairwell enclosures, protected shafts, and high-risk areas. Also mandated by some insurers for commercial premises. Costs approximately £250 more than FD30 equivalent. Tested to BS 476-22 or BS EN 1634-1. FD60S also resists cold smoke at ambient temperature.",
+    "weight": 2.0
+  },
+  {
+    "title": "Building Regulations Part B — Fire Safety",
+    "source": "Approved Document B (ADB), England & Wales",
+    "content": "Approved Document B (ADB) governs fire safety in England and Wales. It requires fire-resisting doors on escape routes, between dwellings in flats, on protected stairwells, and between integral garages and living areas. FD30 minimum for most residential applications; FD60 for commercial corridors and protected shafts above 18m. Scotland uses Technical Handbook Section 2; Northern Ireland uses Technical Booklet E.",
+    "weight": 1.8
+  },
+  {
+    "title": "Escape Route and Means of Escape Requirements",
+    "source": "Approved Document B (ADB), BS 9999",
+    "content": "Means of escape doors must be self-closing, open in the direction of escape where practicable, and achieve at minimum FD30 fire resistance. BS 9999 (Code of Practice for Fire Safety) specifies that escape route doors should not require a key to open from the inside. Maximum width 1200mm for single leaf; wider openings require double leaf or concurrent opening. All escape route fire doors require intumescent seals and self-closing devices.",
+    "weight": 1.8
+  },
+  {
+    "title": "Building Regulations Part M — Accessibility",
+    "source": "Approved Document M (ADM)",
+    "content": "Approved Document M (ADM) covers access and use of buildings. For doors on accessible routes: minimum clear opening width 775mm (single leaf), preferred 850mm. Door handle height 900-1050mm from floor. Threshold maximum 15mm (flush preferred). Lever handles required over knobs for accessibility compliance. Steel Door Company doors comply with Part M when specified with lever hardware and compliant threshold dimensions.",
+    "weight": 1.5
+  },
+  {
+    "title": "BS 476 Part 22 — Fire Resistance Test",
+    "source": "BS 476-22:1987",
+    "content": "BS 476 Part 22 is the British Standard test method for fire resistance of non-loadbearing elements including doors and door assemblies. Tests measure integrity (resistance to flame and hot gases) and insulation (temperature rise on cold face). FD30 = minimum 30 minutes integrity; FD60 = minimum 60 minutes integrity. All Steel Door Company fire-rated doors are certified to this standard. Test is conducted on the complete door assembly including frame, hardware, and seals.",
+    "weight": 1.8
+  },
+  {
+    "title": "BS EN 1634-1 — European Fire Resistance Test",
+    "source": "BS EN 1634-1:2014+A1:2018",
+    "content": "BS EN 1634-1 is the European harmonised test standard for fire-resistance and smoke-control performance of door and shutter assemblies. Provides EI (integrity + insulation) classification. E = integrity only; EI = integrity plus insulation. Replaces BS 476-22 for CE marking purposes under the Construction Products Regulation. Steel Door Company fire doors are tested and certified to BS EN 1634-1.",
+    "weight": 1.8
+  },
+  {
+    "title": "CE Marking for Steel Doors",
+    "source": "Construction Products Regulation (EU) 305/2011, EN 14351-1",
+    "content": "Fire-rated steel doors require CE marking under the Construction Products Regulation for use in regulated construction. CE marking is based on a Declaration of Performance referencing EN 1634-1 test results. External doors are CE marked under EN 14351-1 covering air permeability, water tightness, and wind resistance. Steel Door Company fire-rated products carry CE marking; Declaration of Performance available on request.",
+    "weight": 1.5
+  },
+  {
+    "title": "Intumescent Seals and Cold Smoke Control",
+    "source": "BS EN 1634-3, Approved Document B",
+    "content": "Intumescent seals expand when exposed to heat (typically above 150°C), sealing the gap between door leaf and frame to prevent fire and hot gas passage. Cold smoke seals (brush or bubble strip) prevent smoke infiltration at ambient temperature and are required on all escape route doors. S-suffix (e.g. FD30S, FD60S) indicates the door assembly also achieves cold smoke resistance. Steel Door Company fits intumescent and cold smoke seals as standard on all fire-rated doors.",
+    "weight": 1.6
+  },
+  {
+    "title": "Glazing in Fire-Rated Doors",
+    "source": "BS EN 357, BS 476-22, BS EN 1634-1",
+    "content": "Glass in fire-rated doors must be purpose-made fire-rated glass (e.g. Pilkington Pyrostop, AGC Contraflam, or equivalent certified product). For FD30, glazing must achieve minimum E30 (integrity 30 minutes). For FD60, E60 glass required. Standard annealed or toughened glass and wire-reinforced glass are NOT acceptable for fire door glazing. Maximum glazed panel area is defined by the specific door test certificate and varies by product. Steel Door Company uses only certified fire-rated glazing.",
+    "weight": 1.6
+  },
+  {
+    "title": "Fire Door Hardware Requirements",
+    "source": "BS EN 1154, BS EN 1935, BS EN 12209, Fire Door Inspection Scheme (FDIS)",
+    "content": "Fire-rated doors require: CE-marked self-closing device to BS EN 1154 (overhead closers) or BS EN 1155 (hold-open devices); fire-rated hinges to BS EN 1935 (minimum 3 hinges per door leaf); intumescent letter plate if fitted; fire-rated locks and latches to BS EN 12209. All hardware must be listed on the fire door's third-party test certificate. Using non-certified hardware voids fire door compliance and insurance cover.",
+    "weight": 1.5
+  },
+  {
+    "title": "Steel Door Profile and Construction",
+    "source": "Steel Door Company Technical Specification",
+    "content": "Steel Door Company doors feature a 20mm slim steel profile — among the narrowest certified steel doors on the UK market. Door leaf: 44mm thick for fire-rated, 40mm for standard internal/external. Frame: thermally broken steel with 60mm depth. Core: rockwool/mineral fibre insulation for fire-rated doors; polyurethane foam for standard doors. All doors powder coated in any RAL colour. Weight range: 65-120kg depending on size and specification. Made to measure in the UK.",
+    "weight": 1.4
+  },
+  {
+    "title": "Garage to House Fire Door Requirement",
+    "source": "Approved Document B, Table B1",
+    "content": "UK Building Regulations (Approved Document B, Table B1) require a minimum FD30 self-closing fire door between an integral garage and the dwelling. The door must be self-closing, achieve 30 minutes fire resistance, and be fitted with intumescent seals. This is one of the most common applications for Steel Door Company internal fire-rated single doors. Note: the garage floor must also be 100mm lower than the house floor under ADB requirements.",
+    "weight": 1.5
+  },
+  {
+    "title": "Flat Entrance Doors — Fire Safety Requirements",
+    "source": "Approved Document B, BS 9991",
+    "content": "Entrance doors to individual flats in a block of flats must be FD30S (30-minute fire resistance plus cold smoke control) with a self-closing device. Common areas including corridors and stairwells typically require FD30 or FD60 depending on building height and layout. Buildings above 18m (high-rise): FD60 required for protected shaft doors. BS 9991 (fire safety in residential buildings) provides detailed guidance for purpose-built flats.",
+    "weight": 1.5
+  },
+  {
+    "title": "Commercial Building Corridor Fire Door Requirements",
+    "source": "Approved Document B, BS 9999, BS 9991",
+    "content": "Commercial building corridors serving as escape routes require FD30 minimum fire-rated doors. FD60 required where corridor serves a protected stairwell enclosure or protected shaft in buildings over 18m, or where fire risk assessment identifies higher risk. Office buildings: FD30 on all corridor/office dividing doors on escape routes. Warehouses and factories: consult fire risk assessment — FD60 often required where there is high fire load or storage above 8m.",
+    "weight": 1.5
+  },
+  {
+    "title": "Third-Party Fire Door Certification",
+    "source": "BM TRADA Q-Mark, Certifire (Warrington Fire)",
+    "content": "Steel Door Company fire-rated doors carry BM TRADA Q-Mark and Certifire third-party product certification. This provides: independently audited production quality assurance, ongoing factory surveillance audits, and traceable test certificates per door type. Third-party certified fire doors are required or strongly recommended by building control, insurers, and fire risk assessors. Certification numbers and scope available on request from Steel Door Company.",
+    "weight": 1.6
+  },
+  {
+    "title": "Wine Room Thermal and Acoustic Specification",
+    "source": "Steel Door Company Technical Specification",
+    "content": "Steel Door Company wine room doors are purpose-engineered for temperature-controlled environments. Features: triple-layer thermally broken door leaf, magnetic compression gasket (airtight), 60mm overall frame depth, multi-point locking with 5-point compression closure. Thermal performance: U-value approximately 1.2 W/m²K. Not fire-rated (wine room doors prioritise thermal and airtight performance). Suitable for cellar temperatures 8-16°C. Optional humidity-resistant polyester powder coat available.",
+    "weight": 1.2
+  },
+  {
+    "title": "External Steel Door Weatherproofing and Standards",
+    "source": "BS EN 14351-1, BS EN 12207, BS EN 12208",
+    "content": "External steel doors are tested to BS EN 14351-1 for air permeability, water tightness, and wind resistance. Steel Door Company external doors include: multi-point locking system, weathered threshold option (+£80 uplift over flush), EPDM perimeter compression weather seal, stainless steel hinge pins, and marine-grade hardware option. Air permeability: Class 3 (BS EN 12207). Water tightness: Class 6A (BS EN 12208). All external doors CE marked.",
+    "weight": 1.3
+  },
+  {
+    "title": "Fire Door Self-Closing Device Requirements",
+    "source": "BS EN 1154, Regulatory Reform (Fire Safety) Order 2005",
+    "content": "All fire doors must be fitted with a self-closing device to ensure the door returns to the closed position after each use. Overhead closers (BS EN 1154) are the most common type. Hold-open devices (BS EN 1155) are permitted only when linked to the fire alarm system. The Regulatory Reform (Fire Safety) Order 2005 (RRO) requires responsible persons in commercial premises to maintain all fire doors in working order. Wedging open a fire door is a fire safety offence.",
+    "weight": 1.5
+  },
+  {
+    "title": "Acoustic Performance of Steel Doors",
+    "source": "BS EN ISO 10140, BS EN ISO 717-1",
+    "content": "Steel Door Company standard doors achieve sound reduction index (Rw) of 32-38 dB depending on specification. Acoustic performance is tested to BS EN ISO 10140. Factors affecting acoustic performance: door leaf mass, perimeter seal compression, frame/wall junction detail, and glazing specification. For enhanced acoustic performance (Rw 40+ dB), specify heavy-duty perimeter seals and minimum glazing. Acoustic specification available on request.",
+    "weight": 1.2
+  }
+]
