@@ -31,7 +31,7 @@
 
   .sdc-backdrop {
     position: fixed; inset: 0; z-index: 0;
-    background-image: url('https://steeldoorcompany.co.uk/cdn/shop/files/Steel_Door_Company_desktop.png?v=1779107735&width=2000');
+    background-image: url('/static/images/sdc_backdrop.png');
     background-size: cover; background-position: center top;
     background-repeat: no-repeat;
   }
@@ -196,8 +196,42 @@
   .qc-cta { margin-top: 10px; display: flex; gap: 8px; }
   .btn-gold { background: var(--gold); color: #000; border: none; border-radius: 5px; padding: 7px 13px; font-size: .76rem; font-weight: 600; cursor: pointer; }
   .btn-gold:hover { background: var(--gold-light); }
-  .btn-outline { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 5px; padding: 7px 13px; font-size: .76rem; cursor: pointer; }
+  .btn-outline { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 5px; padding: 7px 13px; font-size: .76rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
   .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ── SURVEY MODAL ─────────────────────────────────────────── */
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,.75); display: flex; align-items: center; justify-content: center;
+  }
+  .modal-backdrop.hidden { display: none; }
+  .modal {
+    background: #141414; border: 1px solid var(--border); border-radius: 12px;
+    padding: 24px; width: min(480px, 92vw); max-height: 90vh; overflow-y: auto;
+  }
+  .modal h2 { font-size: 1rem; color: var(--gold); margin-bottom: 4px; }
+  .modal .modal-sub { font-size: .78rem; color: var(--muted); margin-bottom: 18px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+  .form-group label { font-size: .73rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .form-group input, .form-group textarea, .form-group select {
+    background: #1a1a1a; border: 1px solid var(--border); color: var(--text);
+    border-radius: 5px; padding: 8px 10px; font-size: .82rem; width: 100%;
+    font-family: inherit;
+  }
+  .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--gold); }
+  .form-group textarea { resize: vertical; min-height: 70px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+  .modal-error { color: var(--red); font-size: .78rem; margin-top: 8px; display: none; }
+
+  /* ── CONFIRMATION PANEL ───────────────────────────────────── */
+  .confirm-panel {
+    background: #0a120a; border: 1px solid #22c55e44; border-radius: 10px;
+    padding: 18px; margin-top: 8px; font-size: .82rem;
+  }
+  .confirm-panel .cp-ref { font-family: monospace; color: var(--gold); font-size: .85rem; font-weight: 700; }
+  .confirm-panel .cp-body { color: var(--muted); margin-top: 8px; line-height: 1.5; }
+  .confirm-panel .cp-contact { margin-top: 12px; font-size: .78rem; color: var(--muted); }
 
   /* ── CHECKLIST ────────────────────────────────────────────── */
   .checklist { padding: 0 12px 4px; flex-shrink: 0; }
@@ -472,9 +506,69 @@ function buildQuoteCard(q) {
   return d;
 }
 
-function bookSurvey() {
-  document.getElementById('user-input').value = "I'd like to book a free site survey. My name is ";
-  document.getElementById('user-input').focus();
+// ── Survey modal (UX-001) ─────────────────────────────────────
+async function bookSurvey() {
+  // Pre-fill from current session if available
+  let prefill = {};
+  if (sessionId) {
+    try {
+      const r = await fetch(`${API}/api/session/${sessionId}`);
+      if (r.ok) prefill = await r.json();
+    } catch (_) {}
+  }
+  document.getElementById('survey-name').value = prefill.name || '';
+  document.getElementById('survey-email').value = prefill.email || '';
+  document.getElementById('survey-phone').value = prefill.phone || '';
+  document.getElementById('survey-postcode').value = prefill.postcode || '';
+  document.getElementById('survey-modal').classList.remove('hidden');
+  document.getElementById('survey-name').focus();
+}
+function closeSurveyModal() {
+  document.getElementById('survey-modal').classList.add('hidden');
+  document.getElementById('survey-error').style.display = 'none';
+}
+async function submitSurveyForm(e) {
+  e.preventDefault();
+  const btn = document.getElementById('survey-submit');
+  const errEl = document.getElementById('survey-error');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  errEl.style.display = 'none';
+  const payload = {
+    name: document.getElementById('survey-name').value.trim(),
+    email: document.getElementById('survey-email').value.trim(),
+    phone: document.getElementById('survey-phone').value.trim() || null,
+    postcode: document.getElementById('survey-postcode').value.trim() || null,
+    message: document.getElementById('survey-message').value.trim() || null,
+  };
+  try {
+    const res = await fetch(`${API}/api/enquiry`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Request failed');
+    closeSurveyModal();
+    showConfirmation(data.reference, payload.name);
+  } catch (err) {
+    errEl.textContent = err.message || 'Something went wrong. Please try again.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Send Request';
+  }
+}
+// ── Enquiry confirmation panel (UX-002) ───────────────────────
+function showConfirmation(ref, name) {
+  const panel = document.createElement('div');
+  panel.className = 'confirm-panel';
+  panel.innerHTML = `
+    <div style="color:#22c55e;font-weight:700;font-size:.85rem">Survey request received</div>
+    <div class="cp-ref">${ref}</div>
+    <div class="cp-body">Thanks${name ? ', ' + name.split(' ')[0] : ''}! A member of the Steel Door Company team will contact you within 1 working day to arrange your free site survey.</div>
+    <div class="cp-contact">For urgent queries call <strong>01785 526016</strong> or email <strong>info@steeldoorco.com</strong></div>`;
+  const msgs = document.getElementById('messages');
+  msgs.appendChild(panel);
+  msgs.scrollTop = 99999;
 }
 function adjust() {
   document.getElementById('user-input').value = "Can you adjust the quote — ";
@@ -545,5 +639,44 @@ addMsg('bot',
   null
 );
 </script>
+
+<!-- ── Survey modal (UX-001) ──────────────────────────────────── -->
+<div id="survey-modal" class="modal-backdrop hidden" onclick="if(event.target===this)closeSurveyModal()">
+  <div class="modal">
+    <h2>Book Your Free Site Survey</h2>
+    <p class="modal-sub">Complete your details and one of our consultants will be in touch within 1 working day.</p>
+    <form onsubmit="submitSurveyForm(event)" novalidate>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="survey-name">Full Name *</label>
+          <input id="survey-name" type="text" placeholder="Jane Smith" required autocomplete="name"/>
+        </div>
+        <div class="form-group">
+          <label for="survey-email">Email *</label>
+          <input id="survey-email" type="email" placeholder="jane@example.com" required autocomplete="email"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="survey-phone">Phone</label>
+          <input id="survey-phone" type="tel" placeholder="07700 900123" autocomplete="tel"/>
+        </div>
+        <div class="form-group">
+          <label for="survey-postcode">Postcode</label>
+          <input id="survey-postcode" type="text" placeholder="ST16 3AB" autocomplete="postal-code"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="survey-message">Any additional details</label>
+        <textarea id="survey-message" placeholder="e.g. number of doors, site access notes…"></textarea>
+      </div>
+      <div id="survey-error" class="modal-error"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn-outline" onclick="closeSurveyModal()">Cancel</button>
+        <button id="survey-submit" type="submit" class="btn-gold" style="padding:8px 18px">Send Request</button>
+      </div>
+    </form>
+  </div>
+</div>
 </body>
 </html>

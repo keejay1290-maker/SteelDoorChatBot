@@ -150,10 +150,25 @@ def get_dashboard_stats() -> dict:
         recent_quotes = conn.execute(
             "SELECT reference, created_at, product_name, total, quantity FROM quotes ORDER BY created_at DESC LIMIT 10"
         ).fetchall()
-        # sessions with email collected (conversion proxy)
+        # Use json_extract for reliable email detection (replaces fragile LIKE match)
         sessions_with_email = conn.execute(
-            "SELECT COUNT(*) AS n FROM sessions WHERE data_json LIKE '%\"email\": \"%'"
+            "SELECT COUNT(*) AS n FROM sessions "
+            "WHERE json_extract(data_json, '$.email') IS NOT NULL "
+            "AND json_extract(data_json, '$.email') != ''"
         ).fetchone()["n"]
+        # Pipeline value by routing team
+        pipeline_by_routing = conn.execute(
+            "SELECT json_extract(data_json, '$.routing') AS routing, COUNT(*) AS n "
+            "FROM sessions "
+            "WHERE json_extract(data_json, '$.routing') IS NOT NULL "
+            "GROUP BY routing"
+        ).fetchall()
+        # Daily quote revenue — last 14 days
+        daily_revenue = conn.execute(
+            "SELECT date(created_at) AS day, SUM(total) AS revenue, COUNT(*) AS n "
+            "FROM quotes WHERE date(created_at) >= date('now', '-13 days') "
+            "GROUP BY date(created_at) ORDER BY day"
+        ).fetchall()
     return {
         "enquiries": n_enquiries,
         "quotes": n_quotes,
@@ -163,7 +178,19 @@ def get_dashboard_stats() -> dict:
         "conversion_rate": round(sessions_with_email / n_sessions * 100, 1) if n_sessions else 0.0,
         "top_products": [{"name": r["product_name"], "count": r["n"]} for r in top_products],
         "recent_quotes": [dict(r) for r in recent_quotes],
+        "pipeline_by_routing": [{"routing": r["routing"], "count": r["n"]} for r in pipeline_by_routing],
+        "daily_revenue": [{"day": r["day"], "revenue": round(r["revenue"], 2), "count": r["n"]} for r in daily_revenue],
     }
+
+
+def get_all_quotes(limit: int = 5000) -> list[dict]:
+    with _connect() as conn:
+        rows = conn.execute(
+            "SELECT reference, created_at, product_name, total, subtotal, vat, "
+            "sale_discount, quantity, lead_time FROM quotes ORDER BY created_at DESC LIMIT ?",
+            (limit,)
+        ).fetchall()
+    return [dict(r) for r in rows]
 
 
 def get_quote(reference: str) -> Optional[dict]:

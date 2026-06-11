@@ -191,6 +191,69 @@ def build_internal_brief(s: ConversationSession, quote_total: Optional[float] = 
     return "\n".join(lines)
 
 
+def build_internal_brief_json(s: ConversationSession, quote_total: Optional[float] = None) -> dict:
+    """Machine-readable brief suitable for CRM / HubSpot push."""
+    actions = []
+    if not s.email:       actions.append("Collect email address")
+    if not s.phone:       actions.append("Collect phone number")
+    if not s.postcode:    actions.append("Collect postcode for survey scheduling")
+    if not s.width_mm:    actions.append("Confirm opening dimensions")
+    if s.installation_required is None: actions.append("Confirm supply only vs supply + install")
+    if not s.timeline_weeks: actions.append("Ask about project timeline")
+    if not actions:       actions.append("All information gathered — schedule free site survey")
+
+    deal_stage_map = {
+        "survey": "appointmentscheduled",
+        "sales": "qualifiedtobuy",
+        "installation": "presentationscheduled",
+        "customer_care": "closedwon",
+    }
+    return {
+        "session_id": s.session_id,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "readiness_score": s.readiness_score,
+        "routing": s.routing or "sales",
+        "contact": {
+            "name": s.name,
+            "email": s.email,
+            "phone": s.phone,
+            "postcode": s.postcode,
+        },
+        "project": {
+            "type": s.project_context,
+            "build_type": s.build_type,
+            "installation_required": s.installation_required,
+            "budget_min": s.budget_min,
+            "budget_max": s.budget_max,
+            "timeline_weeks": s.timeline_weeks,
+        },
+        "door_spec": {
+            "door_set": s.door_set,
+            "door_type": s.door_type,
+            "mechanism": s.mechanism,
+            "width_mm": s.width_mm,
+            "height_mm": s.height_mm,
+            "quantity": s.quantity,
+            "glass": s.glass,
+            "ral_colour": s.ral_colour,
+            "fire_rating": s.fire_rating,
+            "side_panels": s.side_panels,
+            "threshold": s.threshold,
+        },
+        "estimate": {
+            "quote_reference": s.quote_reference,
+            "total_inc_vat": quote_total,
+        },
+        "actions_required": actions,
+        "hubspot": {
+            "dealname": f"Steel Door — {s.name or 'Unknown'} — {s.quote_reference or 'No Quote'}",
+            "deal_stage": deal_stage_map.get(s.routing or "sales", "qualifiedtobuy"),
+            "amount": quote_total,
+            "pipeline": "default",
+        },
+    }
+
+
 # ---------------------------------------------------------------------------
 # CRUD
 # ---------------------------------------------------------------------------

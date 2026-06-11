@@ -38,8 +38,8 @@ from .models import (
     QuoteResponse,
 )
 from .quoting import calculate_quote
-from .session import build_internal_brief, get_recent_sessions, load_session
-from .store import get_dashboard_stats, get_quote, init_db, save_enquiry, save_quote
+from .session import build_internal_brief, build_internal_brief_json, get_recent_sessions, load_session
+from .store import get_all_quotes, get_dashboard_stats, get_quote, init_db, save_enquiry, save_quote
 
 # ---------------------------------------------------------------------------
 # Dashboard auth
@@ -191,10 +191,12 @@ def api_get_session(session_id: str) -> dict:
 
 
 @app.get("/api/session/{session_id}/brief")
-def api_get_brief(session_id: str) -> dict:
+def api_get_brief(session_id: str, format: str = "text") -> dict:
     s = load_session(session_id)
     if not s:
         raise HTTPException(status_code=404, detail="Session not found")
+    if format == "json":
+        return build_internal_brief_json(s)
     brief = s.internal_brief or build_internal_brief(s)
     return {"session_id": session_id, "brief": brief, "readiness_score": s.readiness_score}
 
@@ -207,6 +209,50 @@ def api_dashboard_stats(_: str = Depends(_require_dashboard)) -> dict:
 @app.get("/api/dashboard/sessions")
 def api_dashboard_sessions(_: str = Depends(_require_dashboard)) -> list:
     return get_recent_sessions(50)
+
+
+@app.get("/api/dashboard/sessions.csv")
+def api_sessions_csv(_: str = Depends(_require_dashboard)) -> Response:
+    import csv
+    import io
+    sessions = get_recent_sessions(5000)
+    buf = io.StringIO()
+    fields = ["session_id", "created_at", "updated_at", "name", "email",
+              "readiness_score", "routing", "quote_reference", "door_type", "stage"]
+    writer = csv.DictWriter(buf, fieldnames=fields, extrasaction="ignore")
+    writer.writeheader()
+    writer.writerows(sessions)
+    return Response(
+        content=buf.getvalue(), media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=sessions.csv"},
+    )
+
+
+@app.get("/api/dashboard/quotes.csv")
+def api_quotes_csv(_: str = Depends(_require_dashboard)) -> Response:
+    import csv
+    import io
+    quotes = get_all_quotes()
+    if not quotes:
+        return Response(content="reference,created_at,product_name,total,subtotal,vat,sale_discount,quantity,lead_time\n",
+                        media_type="text/csv")
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=list(quotes[0].keys()), extrasaction="ignore")
+    writer.writeheader()
+    writer.writerows(quotes)
+    return Response(
+        content=buf.getvalue(), media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=quotes.csv"},
+    )
+
+
+@app.post("/api/webhooks/test")
+def api_webhook_test(payload: dict, _: str = Depends(_require_dashboard)) -> dict:
+    """Manually fire the configured CRM webhook with a test payload."""
+    from .webhook import fire_webhook
+    test_payload = {"event": "test", "source": "steeldoorai", **payload}
+    sent = fire_webhook(test_payload)
+    return {"sent": sent, "webhook_configured": bool(__import__("os").environ.get("WEBHOOK_URL"))}
 
 
 @app.get("/dashboard")
