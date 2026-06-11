@@ -67,6 +67,7 @@ class ConversationSession:
     ral_colour: Optional[str] = None
     fire_rating: Optional[str] = None
     side_panels: Optional[int] = None
+    threshold: str = "flush"                # "flush" | "weathered" | "step_over"
 
     # Output
     readiness_score: int = 0

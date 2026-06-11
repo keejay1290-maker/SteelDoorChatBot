@@ -192,6 +192,13 @@ def _extract_fields(text: str, s: ConversationSession) -> ConversationSession:
     if panels_m and s.side_panels is None:
         s.side_panels = min(int(panels_m.group(1)), 4)
 
+    # Threshold — "weathered" adds £80 for external doors (flush is default)
+    if s.threshold == "flush":
+        if any(w in t for w in ("weathered threshold", "weather threshold", "weathered")):
+            s.threshold = "weathered"
+        elif any(w in t for w in ("step over", "step-over", "step_over")):
+            s.threshold = "step_over"
+
     return s
 
 
@@ -227,6 +234,7 @@ def _build_quote_request_from_session(s: ConversationSession) -> Optional[QuoteR
         ral_colour=s.ral_colour,
         fire_rating=s.fire_rating or "none",
         side_panels=s.side_panels or 0,
+        threshold=s.threshold,
         quantity=s.quantity or 1,
     )
 
@@ -245,6 +253,7 @@ def _build_quote_request(s: ConversationSession) -> Optional[QuoteRequest]:
         ral_colour=s.ral_colour,
         fire_rating=s.fire_rating or "none",
         side_panels=s.side_panels or 0,
+        threshold=s.threshold,
         quantity=s.quantity or 1,
     )
 
