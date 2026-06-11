@@ -8,12 +8,12 @@
 
 ## SESSION CONTEXT (update each session)
 
-**Last session:** 2026-06-11 — Phase 2 complete, conversation UX fixes, Vercel prod deploy, GROQ multi-model fallback
+**Last session:** 2026-06-11 (S112) — UI-004/005/006 complete: trust strip, product tiles, gallery lightbox, mobile hamburger nav
 **Server:** `http://localhost:8000` (dev) | `http://localhost:8000/dashboard` (dashboard, auth: admin/steeldoor)
 **Stack:** Python 3.12 + FastAPI 0.4.0 + SQLite + Vercel serverless
 **Tests:** 82/82 passing
-**LLM:** GROQ_API_KEY set on Vercel (deployed 5c3eec1). Verify active: check Vercel Function Logs for "LLM call failed" — silence = GROQ working.
-**Live:** https://steel-door-chat-bot.vercel.app (last deploy: 5c3eec1)
+**LLM:** GROQ multi-model 429 fallback active (llama-3.1-8b-instant → gemma2-9b-it → llama3-8b-8192)
+**Live:** https://steel-door-chat-bot.vercel.app (last deploy: 49c4924)
 
 ---
 
@@ -72,13 +72,13 @@
 - [x] **UX-002** — Enquiry confirmation panel (S111)
   - Shows in chat window after form submit: reference, response time, contact details
 
-- [ ] **UI-004** — Fix hero text readability — text too grey/dim on backdrop 🔴
+- [x] **UI-004** — Fix hero text readability — text too grey/dim on backdrop (S112 5110a3e)
   - Hero subtitle currently `rgba(255,255,255,.7)` — bump to `.9` or pure `#fff`
   - Nav link colour `rgba(255,255,255,.75)` → `rgba(255,255,255,.9)`
   - The `--muted: #888` used in trust strips is unreadable on dark — use `#ccc` minimum for anything on backdrop
   - Quick 5-min CSS-only fix
 
-- [ ] **UI-005** — SDC homepage parity: full hero redesign 🟡
+- [x] **UI-005** — SDC homepage parity: trust strip, product tiles, real nav links, hamburger mobile nav (S112 49c4924)
   - **Nav:** Add functional links: Products → `/collections/all`, Gallery → open lightbox, Technical → `steeldoorcompany.co.uk/pages/technical`, About → `steeldoorcompany.co.uk/pages/about`
   - **Hero trust strip** below headline (white text, tick icons):
     `☑️ 2,000+ Installations Nationwide  ☑️ Same Day Quote  ☑️ Slimmest Steel Doors On The Market  ☑️ 24 Month Warranty  ☑️ Bespoke Made To Measure`
@@ -91,7 +91,7 @@
   - **Backdrop parallax** — subtle `background-attachment: fixed` or JS scroll offset on `.sdc-backdrop`
   - **"Why Choose"** section: fitters copy, 20mm profile copy from real site
 
-- [ ] **UI-006** — Working gallery lightbox 🟡
+- [x] **UI-006** — Working gallery lightbox — grid overlay + full-screen viewer, ESC/arrow nav (S112 49c4924)
   - "View Gallery" button opens a full-screen image grid / lightbox
   - Source: real SDC CDN images identified in S111 scrape:
     - `https://steeldoorcompany.co.uk/cdn/shop/files/IMG_8938.jpg?v=1750852840`
@@ -195,7 +195,7 @@
 
 ## KNOWN BUGS / TECH DEBT
 
-- [ ] **BUG-005** — GROQ 429 rate limit causes silent fallback to mock 🔴
+- [x] **BUG-005** — GROQ 429 rate limit — multi-model fallback chain + llama-3.1-8b-instant (S111 919efab)
   - Free tier: 30 req/min on `llama-3.3-70b-versatile`
   - Verified in Vercel logs: first request 200, second 429 → mock reply
   - Fix options: (a) add exponential backoff + 1 retry in `_openai_compatible_reply`, (b) switch to `llama-3.1-8b-instant` (higher free-tier limit), (c) add server-side per-session rate limiter to avoid hammering Groq on rapid messages
