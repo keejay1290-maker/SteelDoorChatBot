@@ -55,18 +55,31 @@ def _extract_fields(text: str, s: ConversationSession) -> ConversationSession:
         s.postcode = pc_m.group(1).upper()
 
     # Name — "I'm John Smith" / "my name is" / "it's for Jane" / "name: John"
+    _NAME_STOPWORDS = {
+        "you", "us", "me", "the", "a", "an", "it", "this", "that", "these", "those",
+        "single", "double", "internal", "external", "hinged", "sliding", "concertina",
+        "black", "white", "grey", "anthracite", "clear", "frosted", "reeded", "bespoke",
+        "fire", "rated", "steel", "door", "doors", "yes", "no", "ok", "okay", "sure",
+        "help", "quote", "price", "cost", "survey", "company", "looking", "interested",
+        "getting", "having", "buying", "want", "need", "like", "please", "thanks",
+        "installing", "installation", "fitted", "fitting", "supply", "deliver",
+        "residential", "commercial", "property", "house", "flat", "office", "warehouse",
+        "new", "build", "renovation", "replacement", "upgrade", "extension",
+    }
+    # \s+ added between prefix and capture — original patterns omitted space before name
+    # No .isupper() check — _normalise_text lowercases text so names arrive lowercase
     name_patterns = [
-        r"(?:my name is|i[' ]m|name[:\s]+|it[' ]?s for\s+)([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)",
-        r"(?:called|contact)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)",
+        r"(?:my name is|i[' ]m|name[:\s]+|it[' ]?s for)\s+([A-Za-z]+(?:\s+[A-Za-z]+)?)",
+        r"(?:called|contact)\s+([A-Za-z]+(?:\s+[A-Za-z]+)?)",
     ]
     if not s.name:
         for pat in name_patterns:
             nm = re.search(pat, text, re.IGNORECASE)
             if nm:
                 candidate = nm.group(1).strip()
-                # Reject single common words that aren't names
-                if candidate.lower() not in {"you", "us", "me", "the", "a", "an"}:
-                    s.name = candidate
+                words = candidate.lower().split()
+                if len(candidate) >= 2 and not any(w in _NAME_STOPWORDS for w in words):
+                    s.name = candidate.title()
                     break
 
     # --- Project context ---
@@ -88,18 +101,18 @@ def _extract_fields(text: str, s: ConversationSession) -> ConversationSession:
         elif any(w in t for w in ("install", "fit", "fitting", "installation")):
             s.installation_required = True
 
-    # Budget — "£4,000-£6,000" / "around 5k" / "budget is £8,000" / "8000 budget"
-    budget_m = re.search(r"£([\d,]+)(?:\s*[-–to]+\s*£?([\d,]+))?", text)
+    # Budget — "£4,000-£6,000" / "£8k" / "around 8k" / "8000 budget"
+    def _parse_budget(v: str, k: str | None = None) -> float:
+        amt = float(v.replace(",", ""))
+        return amt * 1000 if (k or amt < 100) else amt
+
+    budget_m = re.search(r"£([\d,]+)(k)?(?:\s*[-–to]+\s*£?([\d,]+)(k)?)?", text, re.IGNORECASE)
     if not budget_m:
-        budget_m = re.search(r"(\d[\d,]+)k?\s*(?:[-–to]+\s*(\d[\d,]+)k?)?\s*(?:budget|spend|£)", t)
+        budget_m = re.search(r"(\d[\d,]*)(k)?\s*(?:[-–to]+\s*(\d[\d,]*)(k?)?)?\s*(?:budget|spend|£)", t)
     if budget_m and not s.budget_min:
-        def parse_amount(v: str) -> float:
-            v = v.replace(",", "")
-            amt = float(v)
-            return amt * 1000 if amt < 100 else amt
-        s.budget_min = parse_amount(budget_m.group(1))
-        if budget_m.lastindex >= 2 and budget_m.group(2):
-            s.budget_max = parse_amount(budget_m.group(2))
+        s.budget_min = _parse_budget(budget_m.group(1), budget_m.group(2))
+        if budget_m.group(3):
+            s.budget_max = _parse_budget(budget_m.group(3), budget_m.group(4))
 
     # Timeline
     if not s.timeline_weeks:
@@ -808,11 +821,14 @@ def handle_chat(req: ChatRequest) -> ChatResponse:
             s, quote_total=quote.total if quote else None
         )
 
-    # Outbound CRM webhook on first qualification (score 70 + email)
+    # Outbound CRM webhook + HubSpot push on first qualification (score 70 + email)
     if s.readiness_score >= 70 and s.email and not s.brief_email_sent:
         from .webhook import fire_webhook
         from .session import build_internal_brief_json
-        fire_webhook(build_internal_brief_json(s, quote_total=quote.total if quote else None))
+        from .hubspot import push_to_hubspot
+        _qt = quote.total if quote else None
+        fire_webhook(build_internal_brief_json(s, quote_total=_qt))
+        push_to_hubspot(s, quote_total=_qt)
 
     # Email brief to sales team once score hits 70
     if s.readiness_score >= 70 and s.email and s.internal_brief and not s.brief_email_sent:
