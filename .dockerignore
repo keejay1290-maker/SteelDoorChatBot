@@ -1,8 +1,11 @@
 .venv/
 __pycache__/
 *.pyc
+*.pyo
 .pytest_cache/
 .git/
 tests/
 INTERVIEW_NOTES.md
 .env
+enquiries.db
+.claude/
