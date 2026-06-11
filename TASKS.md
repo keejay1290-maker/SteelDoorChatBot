@@ -15,8 +15,10 @@
 **Tests:** 99 passing (run: `cd app && ../.venv/Scripts/pytest ../tests -q`)
 **LLM:** GROQ active — `llama-3.3-70b-versatile`, key set in .env, multi-model fallback active
 **Live (Vercel):** https://steel-door-chat-bot.vercel.app
-**Railway project ID:** 9410b36f-1864-495e-8652-265258687098 (DEPLOY-001 — Dockerfile fixed, railway.json added — trigger redeploy in Railway dashboard)
-**Next priorities:** AI-008 (RAG — largest task), DEPLOY-001 verify (check Railway build after redeploy), then remaining nice-to-haves
+**Railway URL:** https://steeldoorchatbot-production.up.railway.app (LIVE — /health returns ok)
+**Railway project ID:** 9410b36f-1864-495e-8652-265258687098 | Service: 377437d8 | Env: ac0f4b9c
+**Railway deploy cmd:** `RAILWAY_API_TOKEN=ddd08363-... railway up --detach` (does NOT auto-deploy from GitHub push — use CLI)
+**Next priorities:** AI-008 (RAG — largest task), then remaining nice-to-haves
 
 ---
 
@@ -206,8 +208,11 @@
   - HTTPBasic on `/dashboard`, `/api/dashboard/stats`, `/api/dashboard/sessions`
   - `secrets.compare_digest`, env `DASHBOARD_USER` / `DASHBOARD_PASS` (default admin/steeldoor)
 
-- [ ] **DEPLOY-001** — Railway / Fly.io deployment
-  - Dockerfile already exists
+- [x] **DEPLOY-001** — Railway deployment (done this session)
+  - Live: https://steeldoorchatbot-production.up.railway.app (/health → ok)
+  - Fix: `COPY app ./app` → `COPY . .` (BuildKit cache ref collision on Railway Metal builder)
+  - railway.json: explicit Dockerfile builder, /health healthcheck, ON_FAILURE restart
+  - Deploy: Railway does NOT auto-deploy from GitHub — use `railway up --detach` from local
   - Railway: `railway up` or Fly: `fly deploy`
   - Env vars: all from `.env` as Railway secrets
   - Custom domain: `demo.steeldoorcompany.co.uk` (needs their DNS)
