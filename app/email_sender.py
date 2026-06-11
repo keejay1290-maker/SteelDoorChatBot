@@ -75,7 +75,7 @@ def send_brief_email(
             server.starttls(context=ctx)
             server.login(smtp_user, smtp_pass)
             server.sendmail(from_addr, [sales_email], msg.as_string())
-        logger.info("Brief email sent for session %s to %s", session_id, sales_email)
+        logger.info("Brief email sent for session %s", session_id)
         return True
     except Exception as exc:
         logger.warning("Brief email failed for session %s: %s", session_id, exc)
@@ -124,7 +124,7 @@ def send_enquiry_email(*, enquiry: "EnquiryRequest", reference: str) -> bool:
             server.starttls(context=ctx)
             server.login(smtp_user, smtp_pass)
             server.sendmail(from_addr, [sales_email], msg.as_string())
-        logger.info("Enquiry email sent for %s to %s", reference, sales_email)
+        logger.info("Enquiry email sent for %s", reference)
         return True
     except Exception as exc:
         logger.warning("Enquiry email failed for %s: %s", reference, exc)
@@ -191,7 +191,7 @@ def send_customer_quote_email(
             server.starttls(context=ctx)
             server.login(smtp_user, smtp_pass)
             server.sendmail(from_addr, [customer_email], msg.as_string())
-        logger.info("Customer quote email sent for %s to %s", quote.reference, customer_email)
+        logger.info("Customer quote email sent for %s", quote.reference)
         return True
     except Exception as exc:
         logger.warning("Customer quote email failed for %s: %s", quote.reference, exc)

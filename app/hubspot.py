@@ -149,8 +149,8 @@ def push_to_hubspot(s: "ConversationSession", quote_total: Optional[float] = Non
             )
 
         logger.info(
-            "HubSpot OK: contact=%s deal=%s score=%s name=%s",
-            contact_id, deal_id, s.readiness_score, s.name,
+            "HubSpot OK: contact=%s deal=%s score=%s session=%s",
+            contact_id, deal_id, s.readiness_score, s.session_id,
         )
         return True
 
