@@ -8,7 +8,7 @@
 
 ## SESSION CONTEXT (update each session)
 
-**Last session:** 2026-06-11 — OBS-001/OBS-002 done, Railway Dockerfile PORT fix, llm_metrics table + dashboard tiles
+**Last session:** 2026-06-11 (S116) — AI-008 RAG done, CODE-03/01 dead imports removed, Railway env vars set, 121 tests passing
 **Server:** `http://localhost:8000` (dev) | `http://localhost:8000/dashboard` (dashboard, auth: admin/steeldoor)
 **Admin pricing:** `http://localhost:8000/admin/pricing` (same basic auth)
 **Stack:** Python 3.12 + FastAPI 0.111.0 + SQLite + Vercel serverless
@@ -18,7 +18,7 @@
 **Railway URL:** https://steeldoorchatbot-production.up.railway.app (LIVE — /health returns ok)
 **Railway project ID:** 9410b36f-1864-495e-8652-265258687098 | Service: 377437d8 | Env: ac0f4b9c
 **Railway deploy cmd:** `RAILWAY_API_TOKEN=ddd08363-... railway up --detach` (does NOT auto-deploy from GitHub push — use CLI)
-**Next priorities:** AI-008 (RAG — largest task), then remaining nice-to-haves
+**Next priorities:** Opus/Fable audit pass (all 25 checks in .claude/AUDIT-FOR-OPUS.md), then remaining nice-to-haves
 
 ---
 
@@ -153,11 +153,13 @@
   - Downloaded sdc_logo.png, gallery_1.jpg locally; logo now served from /static/images/ with CDN fallback
   - Removed oversized files (gallery_3.png 12MB, single/external tiles >1.5MB — CDN links kept)
 
-- [ ] **AI-008** — RAG on Steel Door Company product specs
-  - Embed: fire rating certificates, building regs docs, technical spec PDFs
-  - Store: ChromaDB or SQLite-vss
-  - Use: answer compliance questions ("does this meet BS476 for escape routes?")
-  - Cited sources in reply
+- [x] **AI-008** — RAG on Steel Door Company product specs (S116 105156d)
+  - app/rag.py: keyword-based retrieval, pure stdlib, Vercel-compatible
+  - app/data/specs/steel_door_specs.json: 20 spec chunks (FD30/FD60, BS476, Part B/M, CE marking, intumescent seals, etc.)
+  - Triggered on compliance keywords (fire rating, BS476, building regs, FD30, FD60, escape route, Part M, etc.)
+  - Top-3 chunks injected into _build_system_prompt() with citation instruction
+  - LLM replies cite source: "According to [BS 476-22]: ..."
+  - 22 new tests in tests/test_rag.py (121 total, 2 skipped)
 
 - [x] **PRICE-001** — Admin pricing table UI (S112 commit)
   - `/admin/pricing` — dark-themed editable table, 25 fields grouped by category
