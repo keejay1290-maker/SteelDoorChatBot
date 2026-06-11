@@ -8,7 +8,7 @@
 
 ## SESSION CONTEXT (update each session)
 
-**Last session:** 2026-06-11 (S112) — UI-004/005/006 complete: trust strip, product tiles, gallery lightbox, mobile hamburger nav
+**Last session:** 2026-06-11 (S112) — BUG-001/002 fixed, CRM-001 done (HubSpot skeleton), UI-004/005/006 complete
 **Server:** `http://localhost:8000` (dev) | `http://localhost:8000/dashboard` (dashboard, auth: admin/steeldoor)
 **Stack:** Python 3.12 + FastAPI 0.4.0 + SQLite + Vercel serverless
 **Tests:** 82/82 passing
@@ -111,7 +111,7 @@
   - `GET /api/session/{id}/brief?format=json` → structured dict with HubSpot field mappings
   - `build_internal_brief_json()` in session.py
 
-- [ ] **CRM-001** — HubSpot webhook integration skeleton
+- [x] **CRM-001** — HubSpot webhook integration skeleton (S112 e7e288e)
   - POST to HubSpot on session complete (score ≥ 70 + email)
   - Maps session fields → HubSpot Contact + Deal
   - Env: `HUBSPOT_ACCESS_TOKEN`, `HUBSPOT_PIPELINE_ID`
@@ -202,11 +202,11 @@
   - Suggested fix: retry once after 1s on 429, then fall back to mock with a user-visible note
   - Model swap: change `default_model` in `_PROVIDERS["groq"]` from `llama-3.3-70b-versatile` → `llama-3.1-8b-instant`
 
-- [ ] **BUG-001** — `_extract_fields` won't extract name from first-person intro mid-conversation
+- [x] **BUG-001** — name extraction fixed: \s+ in patterns, per-word stopword check, .title() normalisation (S112 e7e288e)
   - "It's for John Smith" → sometimes captures "John Smith" fails if surrounding context confuses regex
   - Fix: better name extraction patterns + dedupe against common words
 
-- [ ] **BUG-002** — `_extract_fields` budget parser fails on "£8k" (lowercase k)
+- [x] **BUG-002** — budget parser now captures k suffix, handles single-digit amounts (S112 e7e288e)
   - Fix: normalise lowercase k → multiply by 1000 before parse
 
 - [x] **BUG-003** — Sessions table not created in test context until first write (S110)
