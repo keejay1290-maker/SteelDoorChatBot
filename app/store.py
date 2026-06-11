@@ -1,22 +1,27 @@
-"""SQLite store for customer enquiries (leads) and persisted quotes."""
+"""SQLite/Postgres store for customer enquiries (leads) and persisted quotes.
+
+Backend is chosen by ``app.db`` — SQLite locally + in tests, Supabase Postgres
+in production (when ``DATABASE_URL`` is set). All SQL here is written once with
+``?`` placeholders and dialect-specific fragments from ``app.db``.
+"""
 from __future__ import annotations
 
 import json
 import os
 import sqlite3
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Optional
 
+from . import db
+from .db import AUTOINC_PK, NOW_DEFAULT, as_date, date_days_ago, json_field, q
 from .models import EnquiryRequest, QuoteResponse
 
-DB_PATH = Path(os.environ.get("ENQUIRY_DB", "enquiries.db"))
+# Backwards-compatible alias: callers (incl. session.py) import _connect from here.
+DB_PATH = db.DB_PATH
 
 
-def _connect() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+def _connect():
+    return db.connect()
 
 
 def init_db() -> None:
@@ -32,9 +37,9 @@ def init_db() -> None:
             """
         )
         conn.execute(
-            """
+            f"""
             CREATE TABLE IF NOT EXISTS enquiries (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {AUTOINC_PK},
                 reference TEXT NOT NULL,
                 created_at TEXT NOT NULL,
                 name TEXT NOT NULL,
@@ -48,9 +53,9 @@ def init_db() -> None:
             """
         )
         conn.execute(
-            """
+            f"""
             CREATE TABLE IF NOT EXISTS quotes (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {AUTOINC_PK},
                 reference TEXT NOT NULL UNIQUE,
                 created_at TEXT NOT NULL,
                 product_name TEXT NOT NULL,
@@ -65,30 +70,30 @@ def init_db() -> None:
             """
         )
         conn.execute(
-            """
+            f"""
             CREATE TABLE IF NOT EXISTS pricing_settings (
                 key TEXT PRIMARY KEY,
                 value REAL NOT NULL,
                 description TEXT,
-                updated_at TEXT DEFAULT (datetime('now'))
+                updated_at TEXT DEFAULT {NOW_DEFAULT}
             )
             """
         )
         conn.execute(
-            """
+            f"""
             CREATE TABLE IF NOT EXISTS pricing_history (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {AUTOINC_PK},
                 key TEXT NOT NULL,
                 old_value REAL,
                 new_value REAL NOT NULL,
-                changed_at TEXT DEFAULT (datetime('now'))
+                changed_at TEXT DEFAULT {NOW_DEFAULT}
             )
             """
         )
         conn.execute(
-            """
+            f"""
             CREATE TABLE IF NOT EXISTS llm_metrics (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {AUTOINC_PK},
                 session_id TEXT,
                 provider TEXT NOT NULL,
                 model TEXT NOT NULL,
@@ -97,60 +102,59 @@ def init_db() -> None:
                 completion_tokens INTEGER,
                 total_tokens INTEGER,
                 success INTEGER NOT NULL DEFAULT 1,
-                created_at TEXT DEFAULT (datetime('now'))
+                created_at TEXT DEFAULT {NOW_DEFAULT}
             )
             """
         )
 
 
 def save_enquiry(enquiry: EnquiryRequest, reference: str) -> int:
+    params = (
+        reference,
+        datetime.now(timezone.utc).isoformat(),
+        enquiry.name,
+        enquiry.email,
+        enquiry.phone,
+        enquiry.postcode,
+        enquiry.message,
+        enquiry.quote_reference,
+        enquiry.quote_total,
+    )
+    cols = ("INSERT INTO enquiries "
+            "(reference, created_at, name, email, phone, postcode, message, "
+            "quote_reference, quote_total) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
     with _connect() as conn:
-        cur = conn.execute(
-            """
-            INSERT INTO enquiries
-                (reference, created_at, name, email, phone, postcode, message,
-                 quote_reference, quote_total)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                reference,
-                datetime.now(timezone.utc).isoformat(),
-                enquiry.name,
-                enquiry.email,
-                enquiry.phone,
-                enquiry.postcode,
-                enquiry.message,
-                enquiry.quote_reference,
-                enquiry.quote_total,
-            ),
-        )
+        if db.IS_POSTGRES:
+            row = conn.execute(q(cols + " RETURNING id"), params).fetchone()
+            return int(row["id"])
+        cur = conn.execute(cols, params)
         return int(cur.lastrowid)
 
 
 def save_quote(quote: QuoteResponse) -> None:
-    """Persist a quote for audit / follow-up. Silently skips duplicates."""
+    """Persist a quote for audit / follow-up. Silently skips duplicate references."""
+    cols = ("quotes (reference, created_at, product_name, total, subtotal, vat, "
+            "sale_discount, quantity, lead_time, payload_json) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+    if db.IS_POSTGRES:
+        sql = f"INSERT INTO {cols} ON CONFLICT (reference) DO NOTHING"
+    else:
+        sql = f"INSERT OR IGNORE INTO {cols}"
+    params = (
+        quote.reference,
+        datetime.now(timezone.utc).isoformat(),
+        quote.product_name,
+        quote.total,
+        quote.subtotal,
+        quote.vat,
+        quote.sale_discount,
+        quote.quantity,
+        quote.lead_time,
+        quote.model_dump_json(),
+    )
     try:
         with _connect() as conn:
-            conn.execute(
-                """
-                INSERT OR IGNORE INTO quotes
-                    (reference, created_at, product_name, total, subtotal, vat,
-                     sale_discount, quantity, lead_time, payload_json)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    quote.reference,
-                    datetime.now(timezone.utc).isoformat(),
-                    quote.product_name,
-                    quote.total,
-                    quote.subtotal,
-                    quote.vat,
-                    quote.sale_discount,
-                    quote.quantity,
-                    quote.lead_time,
-                    quote.model_dump_json(),
-                ),
-            )
+            conn.execute(q(sql), params)
     except Exception:
         pass  # never let persistence errors break the quote flow
 
@@ -170,7 +174,7 @@ def count_quotes() -> int:
 def get_enquiry(enquiry_id: int) -> Optional[dict]:
     with _connect() as conn:
         row = conn.execute(
-            "SELECT * FROM enquiries WHERE id = ?", (enquiry_id,)
+            q("SELECT * FROM enquiries WHERE id = ?"), (enquiry_id,)
         ).fetchone()
         return dict(row) if row else None
 
@@ -187,24 +191,20 @@ def get_dashboard_stats() -> dict:
         recent_quotes = conn.execute(
             "SELECT reference, created_at, product_name, total, quantity FROM quotes ORDER BY created_at DESC LIMIT 10"
         ).fetchall()
-        # Use json_extract for reliable email detection (replaces fragile LIKE match)
+        email_expr = json_field("data_json", "email")
         sessions_with_email = conn.execute(
-            "SELECT COUNT(*) AS n FROM sessions "
-            "WHERE json_extract(data_json, '$.email') IS NOT NULL "
-            "AND json_extract(data_json, '$.email') != ''"
+            f"SELECT COUNT(*) AS n FROM sessions "
+            f"WHERE {email_expr} IS NOT NULL AND {email_expr} != ''"
         ).fetchone()["n"]
-        # Pipeline value by routing team
+        routing_expr = json_field("data_json", "routing")
         pipeline_by_routing = conn.execute(
-            "SELECT json_extract(data_json, '$.routing') AS routing, COUNT(*) AS n "
-            "FROM sessions "
-            "WHERE json_extract(data_json, '$.routing') IS NOT NULL "
-            "GROUP BY routing"
+            f"SELECT {routing_expr} AS routing, COUNT(*) AS n "
+            f"FROM sessions WHERE {routing_expr} IS NOT NULL GROUP BY {routing_expr}"
         ).fetchall()
-        # Daily quote revenue — last 14 days
         daily_revenue = conn.execute(
-            "SELECT date(created_at) AS day, SUM(total) AS revenue, COUNT(*) AS n "
-            "FROM quotes WHERE date(created_at) >= date('now', '-13 days') "
-            "GROUP BY date(created_at) ORDER BY day"
+            f"SELECT {as_date('created_at')} AS day, SUM(total) AS revenue, COUNT(*) AS n "
+            f"FROM quotes WHERE {as_date('created_at')} >= {date_days_ago(13)} "
+            f"GROUP BY {as_date('created_at')} ORDER BY day"
         ).fetchall()
     return {
         "enquiries": n_enquiries,
@@ -216,15 +216,15 @@ def get_dashboard_stats() -> dict:
         "top_products": [{"name": r["product_name"], "count": r["n"]} for r in top_products],
         "recent_quotes": [dict(r) for r in recent_quotes],
         "pipeline_by_routing": [{"routing": r["routing"], "count": r["n"]} for r in pipeline_by_routing],
-        "daily_revenue": [{"day": r["day"], "revenue": round(r["revenue"], 2), "count": r["n"]} for r in daily_revenue],
+        "daily_revenue": [{"day": str(r["day"]), "revenue": round(r["revenue"], 2), "count": r["n"]} for r in daily_revenue],
     }
 
 
 def get_all_quotes(limit: int = 5000) -> list[dict]:
     with _connect() as conn:
         rows = conn.execute(
-            "SELECT reference, created_at, product_name, total, subtotal, vat, "
-            "sale_discount, quantity, lead_time FROM quotes ORDER BY created_at DESC LIMIT ?",
+            q("SELECT reference, created_at, product_name, total, subtotal, vat, "
+              "sale_discount, quantity, lead_time FROM quotes ORDER BY created_at DESC LIMIT ?"),
             (limit,)
         ).fetchall()
     return [dict(r) for r in rows]
@@ -233,7 +233,7 @@ def get_all_quotes(limit: int = 5000) -> list[dict]:
 def get_quote(reference: str) -> Optional[dict]:
     with _connect() as conn:
         row = conn.execute(
-            "SELECT * FROM quotes WHERE reference = ?", (reference,)
+            q("SELECT * FROM quotes WHERE reference = ?"), (reference,)
         ).fetchone()
         return dict(row) if row else None
 
@@ -254,20 +254,20 @@ def set_pricing_field(key: str, value: float, description: str = "") -> None:
     now = datetime.now(timezone.utc).isoformat()
     with _connect() as conn:
         existing = conn.execute(
-            "SELECT value FROM pricing_settings WHERE key = ?", (key,)
+            q("SELECT value FROM pricing_settings WHERE key = ?"), (key,)
         ).fetchone()
         old_value = existing["value"] if existing else None
         conn.execute(
-            """
+            q("""
             INSERT INTO pricing_settings (key, value, description, updated_at)
             VALUES (?, ?, ?, ?)
             ON CONFLICT(key) DO UPDATE SET value=excluded.value,
                 description=excluded.description, updated_at=excluded.updated_at
-            """,
+            """),
             (key, value, description, now),
         )
         conn.execute(
-            "INSERT INTO pricing_history (key, old_value, new_value, changed_at) VALUES (?, ?, ?, ?)",
+            q("INSERT INTO pricing_history (key, old_value, new_value, changed_at) VALUES (?, ?, ?, ?)"),
             (key, old_value, value, now),
         )
 
@@ -275,8 +275,8 @@ def set_pricing_field(key: str, value: float, description: str = "") -> None:
 def get_pricing_history(limit: int = 50) -> list[dict]:
     with _connect() as conn:
         rows = conn.execute(
-            "SELECT key, old_value, new_value, changed_at FROM pricing_history "
-            "ORDER BY changed_at DESC LIMIT ?",
+            q("SELECT key, old_value, new_value, changed_at FROM pricing_history "
+              "ORDER BY changed_at DESC LIMIT ?"),
             (limit,),
         ).fetchall()
     return [dict(r) for r in rows]
@@ -294,12 +294,12 @@ def save_llm_metric(
 ) -> None:
     with _connect() as conn:
         conn.execute(
-            """
+            q("""
             INSERT INTO llm_metrics
                 (session_id, provider, model, latency_ms, prompt_tokens,
                  completion_tokens, total_tokens, success)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
+            """),
             (session_id, provider, model, latency_ms, prompt_tokens,
              completion_tokens, total_tokens, 1 if success else 0),
         )

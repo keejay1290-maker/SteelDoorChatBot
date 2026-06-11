@@ -14,6 +14,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Optional
 
+from .db import q
 from .store import _connect
 
 
@@ -263,7 +264,7 @@ def build_internal_brief_json(s: ConversationSession, quote_total: Optional[floa
 def load_session(session_id: str) -> Optional[ConversationSession]:
     with _connect() as conn:
         row = conn.execute(
-            "SELECT data_json FROM sessions WHERE session_id = ?", (session_id,)
+            q("SELECT data_json FROM sessions WHERE session_id = ?"), (session_id,)
         ).fetchone()
     if not row:
         return None
@@ -275,30 +276,25 @@ def load_session(session_id: str) -> Optional[ConversationSession]:
 def save_session(s: ConversationSession) -> None:
     s.updated_at = datetime.now(timezone.utc).isoformat()
     data_json = json.dumps(asdict(s))
+    upsert = q(
+        """
+        INSERT INTO sessions (session_id, created_at, updated_at, data_json)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(session_id) DO UPDATE SET
+            updated_at=excluded.updated_at,
+            data_json=excluded.data_json
+        """
+    )
+    params = (s.session_id, s.created_at, s.updated_at, data_json)
     try:
         with _connect() as conn:
-            conn.execute(
-                """
-                INSERT INTO sessions (session_id, created_at, updated_at, data_json)
-                VALUES (?, ?, ?, ?)
-                ON CONFLICT(session_id) DO UPDATE SET
-                    updated_at=excluded.updated_at,
-                    data_json=excluded.data_json
-                """,
-                (s.session_id, s.created_at, s.updated_at, data_json),
-            )
+            conn.execute(upsert, params)
     except Exception:
         # Table may not exist in test context (no FastAPI startup). Create it and retry once.
         try:
             init_sessions_table()
             with _connect() as conn:
-                conn.execute(
-                    """
-                    INSERT OR REPLACE INTO sessions (session_id, created_at, updated_at, data_json)
-                    VALUES (?, ?, ?, ?)
-                    """,
-                    (s.session_id, s.created_at, s.updated_at, data_json),
-                )
+                conn.execute(upsert, params)
         except Exception:
             pass  # never let session persistence break a chat response
 
@@ -306,7 +302,7 @@ def save_session(s: ConversationSession) -> None:
 def get_recent_sessions(limit: int = 50) -> list[dict]:
     with _connect() as conn:
         rows = conn.execute(
-            "SELECT session_id, created_at, updated_at, data_json FROM sessions ORDER BY updated_at DESC LIMIT ?",
+            q("SELECT session_id, created_at, updated_at, data_json FROM sessions ORDER BY updated_at DESC LIMIT ?"),
             (limit,)
         ).fetchall()
     result = []
