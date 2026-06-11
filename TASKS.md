@@ -102,7 +102,7 @@
   - Click image → full-screen lightbox, left/right nav, ESC to close
   - "View more on Instagram @steeldoorcompany" link at bottom
 
-- [ ] **UX-003** — Mobile-responsive layout
+- [x] **UX-003** — Mobile bottom sheet, backdrop fix, Playwright verified (S112 5606b11)
   - Sidebar + right panel hidden on mobile (already done via media query)
   - Need to test on actual mobile viewport
   - Collapsible product list as bottom sheet on mobile
@@ -132,10 +132,11 @@
   - Use: answer compliance questions ("does this meet BS476 for escape routes?")
   - Cited sources in reply
 
-- [ ] **PRICE-001** — Admin pricing table UI
-  - Editable pricing at `/admin/pricing` (basic auth protected)
-  - Updates PRICING dict in quoting.py OR stores in SQLite
-  - Version history (who changed what, when)
+- [x] **PRICE-001** — Admin pricing table UI (S112 commit)
+  - `/admin/pricing` — dark-themed editable table, 25 fields grouped by category
+  - SQLite `pricing_settings` + `pricing_history` tables; `_effective_pricing()` merges overrides at quote time
+  - OVERRIDE badge, per-field Reset, version history table (last 20 rows), toast notifications
+  - Routes: `GET/POST /api/admin/pricing`, `DELETE /api/admin/pricing/{key}`, `GET /admin/pricing`
 
 ### 🟢 NICE-TO-HAVE — Phase 2 Product
 

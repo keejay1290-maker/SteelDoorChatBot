@@ -64,6 +64,27 @@ def init_db() -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS pricing_settings (
+                key TEXT PRIMARY KEY,
+                value REAL NOT NULL,
+                description TEXT,
+                updated_at TEXT DEFAULT (datetime('now'))
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS pricing_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                key TEXT NOT NULL,
+                old_value REAL,
+                new_value REAL NOT NULL,
+                changed_at TEXT DEFAULT (datetime('now'))
+            )
+            """
+        )
 
 
 def save_enquiry(enquiry: EnquiryRequest, reference: str) -> int:
@@ -199,3 +220,47 @@ def get_quote(reference: str) -> Optional[dict]:
             "SELECT * FROM quotes WHERE reference = ?", (reference,)
         ).fetchone()
         return dict(row) if row else None
+
+
+# ---------------------------------------------------------------------------
+# Pricing CRUD
+# ---------------------------------------------------------------------------
+
+def get_pricing_overrides() -> dict[str, float]:
+    """Return all rows from pricing_settings as {key: value}. Empty dict if none set."""
+    with _connect() as conn:
+        rows = conn.execute("SELECT key, value FROM pricing_settings").fetchall()
+    return {r["key"]: r["value"] for r in rows}
+
+
+def set_pricing_field(key: str, value: float, description: str = "") -> None:
+    """Upsert a single pricing key, recording history."""
+    now = datetime.now(timezone.utc).isoformat()
+    with _connect() as conn:
+        existing = conn.execute(
+            "SELECT value FROM pricing_settings WHERE key = ?", (key,)
+        ).fetchone()
+        old_value = existing["value"] if existing else None
+        conn.execute(
+            """
+            INSERT INTO pricing_settings (key, value, description, updated_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(key) DO UPDATE SET value=excluded.value,
+                description=excluded.description, updated_at=excluded.updated_at
+            """,
+            (key, value, description, now),
+        )
+        conn.execute(
+            "INSERT INTO pricing_history (key, old_value, new_value, changed_at) VALUES (?, ?, ?, ?)",
+            (key, old_value, value, now),
+        )
+
+
+def get_pricing_history(limit: int = 50) -> list[dict]:
+    with _connect() as conn:
+        rows = conn.execute(
+            "SELECT key, old_value, new_value, changed_at FROM pricing_history "
+            "ORDER BY changed_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    return [dict(r) for r in rows]

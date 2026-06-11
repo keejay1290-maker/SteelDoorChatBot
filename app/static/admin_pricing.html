@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pricing Admin — Steel Door AI</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --gold: #d4a017;
+    --bg: #0f0f0f;
+    --card: #1a1a1a;
+    --border: rgba(255,255,255,.1);
+    --text: #e8e8e8;
+    --muted: #888;
+    --green: #22c55e;
+    --red: #ef4444;
+  }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; min-height: 100vh; }
+
+  header {
+    background: #111; border-bottom: 1px solid var(--border);
+    padding: 16px 32px; display: flex; align-items: center; gap: 24px;
+  }
+  header h1 { font-size: 1rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--gold); }
+  header nav { display: flex; gap: 16px; margin-left: auto; }
+  header nav a { color: var(--muted); text-decoration: none; font-size: .82rem; }
+  header nav a:hover { color: #fff; }
+
+  main { max-width: 860px; margin: 0 auto; padding: 32px 24px 80px; }
+
+  .page-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 6px; }
+  .page-sub { color: var(--muted); font-size: .82rem; margin-bottom: 28px; }
+
+  .section { margin-bottom: 36px; }
+  .section-label {
+    font-size: .7rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 10px; padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: .7rem; font-weight: 600; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; padding: 6px 10px; }
+  td { padding: 6px 10px; border-top: 1px solid var(--border); vertical-align: middle; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+
+  .field-key { font-family: monospace; font-size: .8rem; color: #aaa; }
+  .field-desc { font-size: .78rem; color: var(--muted); }
+  .override-badge { display: inline-block; background: rgba(212,160,23,.15); color: var(--gold); border-radius: 3px; padding: 1px 6px; font-size: .68rem; font-weight: 700; letter-spacing: .04em; }
+
+  .price-input {
+    background: #222; border: 1px solid var(--border); border-radius: 5px;
+    color: #fff; padding: 5px 10px; font-size: .88rem; width: 110px; text-align: right;
+    transition: border-color .15s;
+  }
+  .price-input:focus { outline: none; border-color: var(--gold); }
+  .price-input.changed { border-color: var(--gold); background: rgba(212,160,23,.08); }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 20px; }
+  .btn {
+    padding: 9px 22px; border-radius: 6px; font-size: .82rem; font-weight: 700;
+    cursor: pointer; border: none; letter-spacing: .04em; transition: opacity .15s;
+  }
+  .btn:hover { opacity: .85; }
+  .btn-gold { background: var(--gold); color: #000; }
+  .btn-outline { background: none; border: 1px solid var(--border); color: var(--muted); }
+  .btn-danger { background: rgba(239,68,68,.15); color: var(--red); border: 1px solid rgba(239,68,68,.25); font-size: .76rem; padding: 4px 10px; }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 999;
+    background: #1e1e1e; border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 18px; font-size: .82rem; box-shadow: 0 4px 24px rgba(0,0,0,.4);
+    transform: translateY(80px); opacity: 0; transition: all .25s;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: var(--green); color: var(--green); }
+  .toast.error { border-color: var(--red); color: var(--red); }
+
+  .history-table { font-size: .78rem; }
+  .history-table td { color: var(--muted); }
+  .history-table .key-col { font-family: monospace; color: #bbb; }
+  .val-old { text-decoration: line-through; color: var(--red); opacity: .7; }
+  .val-new { color: var(--green); font-weight: 600; }
+
+  @media (max-width: 600px) {
+    header { padding: 12px 16px; }
+    main { padding: 20px 14px 60px; }
+    .price-input { width: 90px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Pricing Admin</h1>
+  <nav>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/">Chat UI</a>
+  </nav>
+</header>
+
+<main>
+  <div class="page-title">Pricing Table</div>
+  <div class="page-sub">Changes take effect immediately on the next quote. Hardcoded defaults shown in grey — override by editing. History tracked below.</div>
+
+  <div id="pricing-form"></div>
+
+  <div class="btn-row">
+    <button class="btn btn-gold" onclick="saveChanges()">Save Changes</button>
+    <button class="btn btn-outline" onclick="loadPricing()">Discard &amp; Reload</button>
+  </div>
+
+  <div class="section" style="margin-top:40px;">
+    <div class="section-label">Change History (last 20)</div>
+    <table class="history-table">
+      <thead><tr><th>Field</th><th>Old</th><th>New</th><th>When</th></tr></thead>
+      <tbody id="history-body"><tr><td colspan="4" style="color:var(--muted);padding:12px 10px;">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SECTION_LABELS = {
+  base: 'Base Prices (£, exc. VAT)',
+  door_type_uplift: 'Door Type Uplifts (£)',
+  mechanism_uplift: 'Mechanism Uplifts (£)',
+  glass_uplift: 'Glazing Uplifts (£)',
+  fire_rating_uplift: 'Fire Rating Uplifts (£)',
+  threshold_uplift: 'Threshold Uplifts (£)',
+  scaling_per_m2: 'Other',
+  ral_colour_uplift: 'Other',
+  side_panel_each: 'Other',
+  sale_fraction: 'Other',
+  sale_cap: 'Other',
+  vat_rate: 'Other',
+};
+
+let allFields = [];
+const changedKeys = new Set();
+
+async function loadPricing() {
+  const res = await fetch('/api/admin/pricing');
+  const data = await res.json();
+  allFields = data.fields;
+  changedKeys.clear();
+  renderForm(allFields);
+  renderHistory(data.history);
+}
+
+function renderForm(fields) {
+  // Group by section
+  const sections = {};
+  for (const f of fields) {
+    const sec = f.category in SECTION_LABELS ? SECTION_LABELS[f.category] : 'Other';
+    if (!sections[sec]) sections[sec] = [];
+    sections[sec].push(f);
+  }
+
+  let html = '';
+  for (const [label, rows] of Object.entries(sections)) {
+    html += `<div class="section"><div class="section-label">${label}</div>`;
+    html += `<table><thead><tr><th>Field</th><th style="text-align:right">Default</th><th style="text-align:right">Current</th><th></th></tr></thead><tbody>`;
+    for (const f of rows) {
+      const displayKey = f.sub_key || f.key;
+      const badge = f.overridden ? '<span class="override-badge">OVERRIDE</span>' : '';
+      html += `<tr>
+        <td><span class="field-key">${displayKey}</span> ${badge}</td>
+        <td style="text-align:right;color:var(--muted)">£${f.default.toLocaleString('en-GB', {minimumFractionDigits: 2})}</td>
+        <td style="text-align:right">
+          <input class="price-input${f.overridden ? ' changed' : ''}"
+                 id="field-${f.key}"
+                 type="number" step="0.01" min="0"
+                 value="${f.current}"
+                 data-default="${f.default}"
+                 data-key="${f.key}"
+                 onchange="onFieldChange(this)"
+                 oninput="onFieldChange(this)"/>
+        </td>
+        <td>
+          ${f.overridden ? `<button class="btn btn-danger" onclick="resetField('${f.key}')">Reset</button>` : ''}
+        </td>
+      </tr>`;
+    }
+    html += `</tbody></table></div>`;
+  }
+  document.getElementById('pricing-form').innerHTML = html;
+}
+
+function renderHistory(history) {
+  const tbody = document.getElementById('history-body');
+  if (!history.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted);padding:12px 10px;">No changes yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = history.map(h => `
+    <tr>
+      <td class="key-col">${h.key}</td>
+      <td><span class="val-old">${h.old_value != null ? '£' + Number(h.old_value).toFixed(2) : '—'}</span></td>
+      <td><span class="val-new">£${Number(h.new_value).toFixed(2)}</span></td>
+      <td>${new Date(h.changed_at).toLocaleString('en-GB', {dateStyle:'short',timeStyle:'short'})}</td>
+    </tr>
+  `).join('');
+}
+
+function onFieldChange(input) {
+  const val = parseFloat(input.value);
+  const def = parseFloat(input.dataset.default);
+  if (!isNaN(val) && val !== def) {
+    input.classList.add('changed');
+    changedKeys.add(input.dataset.key);
+  } else {
+    input.classList.remove('changed');
+    changedKeys.delete(input.dataset.key);
+  }
+}
+
+async function saveChanges() {
+  if (changedKeys.size === 0) { showToast('No changes to save', 'error'); return; }
+  const body = {};
+  for (const key of changedKeys) {
+    const inp = document.getElementById(`field-${key}`);
+    if (inp) body[key] = parseFloat(inp.value);
+  }
+  const res = await fetch('/api/admin/pricing', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (data.errors && data.errors.length) {
+    showToast('Errors: ' + data.errors.join(', '), 'error');
+  } else {
+    showToast(`${data.updated.length} field(s) saved`, 'success');
+    loadPricing();
+  }
+}
+
+async function resetField(key) {
+  await fetch(`/api/admin/pricing/${key}`, { method: 'DELETE' });
+  showToast(`${key} reset to default`, 'success');
+  loadPricing();
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+loadPricing();
+</script>
+</body>
+</html>

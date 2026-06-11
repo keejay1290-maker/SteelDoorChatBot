@@ -39,7 +39,10 @@ from .models import (
 )
 from .quoting import calculate_quote
 from .session import build_internal_brief, build_internal_brief_json, get_recent_sessions, load_session
-from .store import get_all_quotes, get_dashboard_stats, get_quote, init_db, save_enquiry, save_quote
+from .store import (
+    get_all_quotes, get_dashboard_stats, get_quote, init_db, save_enquiry, save_quote,
+    get_pricing_overrides, set_pricing_field, get_pricing_history,
+)
 
 # ---------------------------------------------------------------------------
 # Dashboard auth
@@ -258,6 +261,75 @@ def api_webhook_test(payload: dict, _: str = Depends(_require_dashboard)) -> dic
 @app.get("/dashboard")
 def dashboard(_: str = Depends(_require_dashboard)) -> FileResponse:
     return FileResponse(STATIC_DIR / "dashboard.html")
+
+
+# ---------------------------------------------------------------------------
+# Pricing admin
+# ---------------------------------------------------------------------------
+
+from .quoting import PRICING as _DEFAULT_PRICING
+
+
+@app.get("/api/admin/pricing")
+def api_get_pricing(_: str = Depends(_require_dashboard)) -> dict:
+    """Return current effective pricing (defaults merged with DB overrides)."""
+    overrides = get_pricing_overrides()
+    # Build a flat list of all editable fields with current values
+    fields = []
+    for cat, val in _DEFAULT_PRICING.items():
+        if isinstance(val, dict):
+            for sub, default in val.items():
+                key = f"{cat}.{sub}"
+                fields.append({
+                    "key": key,
+                    "category": cat,
+                    "sub_key": sub,
+                    "default": default,
+                    "current": overrides.get(key, default),
+                    "overridden": key in overrides,
+                })
+        elif isinstance(val, float):
+            fields.append({
+                "key": cat,
+                "category": cat,
+                "sub_key": None,
+                "default": val,
+                "current": overrides.get(cat, val),
+                "overridden": cat in overrides,
+            })
+    return {"fields": fields, "history": get_pricing_history(20)}
+
+
+@app.post("/api/admin/pricing")
+def api_set_pricing(body: dict, _: str = Depends(_require_dashboard)) -> dict:
+    """Update one or more pricing fields. Body: {key: value, ...}"""
+    updated = []
+    errors = []
+    for key, raw_value in body.items():
+        try:
+            value = float(raw_value)
+            if value < 0:
+                errors.append(f"{key}: value must be >= 0")
+                continue
+            set_pricing_field(key, value)
+            updated.append(key)
+        except (ValueError, TypeError) as e:
+            errors.append(f"{key}: {e}")
+    return {"updated": updated, "errors": errors}
+
+
+@app.delete("/api/admin/pricing/{key:path}")
+def api_reset_pricing(key: str, _: str = Depends(_require_dashboard)) -> dict:
+    """Remove a DB override, reverting that field to the hardcoded default."""
+    from .store import _connect
+    with _connect() as conn:
+        conn.execute("DELETE FROM pricing_settings WHERE key = ?", (key,))
+    return {"reset": key}
+
+
+@app.get("/admin/pricing")
+def admin_pricing(_: str = Depends(_require_dashboard)) -> FileResponse:
+    return FileResponse(STATIC_DIR / "admin_pricing.html")
 
 
 @app.get("/")

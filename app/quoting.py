@@ -111,24 +111,42 @@ def _quote_reference(req: "QuoteRequest") -> str:
     return f"SDA-{digest}"
 
 
+def _effective_pricing() -> dict:
+    """Return PRICING merged with any DB overrides. Flat keys like 'base.single'."""
+    import copy
+    p = copy.deepcopy(PRICING)
+    try:
+        from .store import get_pricing_overrides
+        for key, value in get_pricing_overrides().items():
+            parts = key.split(".", 1)
+            if len(parts) == 2 and parts[0] in p and isinstance(p[parts[0]], dict):
+                p[parts[0]][parts[1]] = value
+            elif len(parts) == 1 and key in p and not isinstance(p[key], dict):
+                p[key] = value
+    except Exception:
+        pass  # DB unavailable — fall back to hardcoded
+    return p
+
+
 def calculate_quote(req: QuoteRequest) -> QuoteResponse:
     """Calculate an itemised, deterministic estimate for a bespoke door."""
+    pricing = _effective_pricing()
     cat_key = _resolve_catalogue_key(req)
     product = CATALOGUE[cat_key]
     lines: list[QuoteLine] = []
     notes: list[str] = []
 
     # --- Base price ---
-    base = PRICING["base"].get(req.door_set, PRICING["base"]["single"])
+    base = pricing["base"].get(req.door_set, pricing["base"]["single"])
     lines.append(QuoteLine(label=f"{product['name']} — base (from)", amount=base))
 
     # --- Door type uplift ---
-    type_uplift = PRICING["door_type_uplift"][req.door_type]
+    type_uplift = pricing["door_type_uplift"][req.door_type]
     if type_uplift:
         lines.append(QuoteLine(label=f"Door type ({req.door_type.replace('_', ' ')})", amount=type_uplift))
 
     # --- Mechanism uplift ---
-    mech_uplift = PRICING["mechanism_uplift"][req.mechanism]
+    mech_uplift = pricing["mechanism_uplift"][req.mechanism]
     if mech_uplift:
         lines.append(QuoteLine(label=f"Mechanism ({req.mechanism})", amount=mech_uplift))
 
@@ -136,30 +154,30 @@ def calculate_quote(req: QuoteRequest) -> QuoteResponse:
     baseline_area = _area_m2(product["baseline_w_mm"], product["baseline_h_mm"])
     area = _area_m2(req.width_mm, req.height_mm)
     if area > baseline_area:
-        scaling = round((area - baseline_area) * PRICING["scaling_per_m2"], 2)
+        scaling = round((area - baseline_area) * pricing["scaling_per_m2"], 2)
         lines.append(QuoteLine(label=f"Size uplift ({area:.2f} m² opening)", amount=scaling))
 
     # --- Glass ---
-    glass_uplift = PRICING["glass_uplift"][req.glass]
+    glass_uplift = pricing["glass_uplift"][req.glass]
     if glass_uplift:
         lines.append(QuoteLine(label=f"Glazing — {req.glass}", amount=glass_uplift))
 
     # --- Explicit fire rating (on top of base fire_rated type cost) ---
-    fire_uplift = PRICING["fire_rating_uplift"][req.fire_rating]
+    fire_uplift = pricing["fire_rating_uplift"][req.fire_rating]
     if fire_uplift:
         lines.append(QuoteLine(label=f"Fire rating certification ({req.fire_rating})", amount=fire_uplift))
 
     # --- RAL colour ---
     if req.ral_colour:
-        lines.append(QuoteLine(label=f"Custom RAL colour ({req.ral_colour})", amount=PRICING["ral_colour_uplift"]))
+        lines.append(QuoteLine(label=f"Custom RAL colour ({req.ral_colour})", amount=pricing["ral_colour_uplift"]))
 
     # --- Side panels ---
     if req.side_panels:
-        panel_cost = round(PRICING["side_panel_each"] * req.side_panels, 2)
+        panel_cost = round(pricing["side_panel_each"] * req.side_panels, 2)
         lines.append(QuoteLine(label=f"Fixed side panels ×{req.side_panels}", amount=panel_cost))
 
     # --- Threshold ---
-    threshold_uplift = PRICING["threshold_uplift"].get(req.threshold, 0.0)
+    threshold_uplift = pricing["threshold_uplift"].get(req.threshold, 0.0)
     if threshold_uplift:
         lines.append(QuoteLine(label=f"Threshold ({req.threshold.replace('_', ' ')})", amount=threshold_uplift))
 
@@ -167,16 +185,16 @@ def calculate_quote(req: QuoteRequest) -> QuoteResponse:
     unit_price = round(sum(ln.amount for ln in lines), 2)
     gross = round(unit_price * req.quantity, 2)
 
-    raw_discount = gross * PRICING["sale_fraction"]
-    sale_discount = round(min(raw_discount, PRICING["sale_cap"]), 2)
+    raw_discount = gross * pricing["sale_fraction"]
+    sale_discount = round(min(raw_discount, pricing["sale_cap"]), 2)
     if sale_discount:
         notes.append(
-            f"Summer Sale applied: {int(PRICING['sale_fraction'] * 100)}% off "
-            f"(capped at GBP {PRICING['sale_cap']:.0f})."
+            f"Summer Sale applied: {int(pricing['sale_fraction'] * 100)}% off "
+            f"(capped at GBP {pricing['sale_cap']:.0f})."
         )
 
     subtotal = round(gross - sale_discount, 2)
-    vat = round(subtotal * PRICING["vat_rate"], 2)
+    vat = round(subtotal * pricing["vat_rate"], 2)
     total = round(subtotal + vat, 2)
 
     notes.append(
