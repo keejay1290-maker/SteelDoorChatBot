@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Env
+.env
+
+# Local database
+*.db
+
+# Private interview prep (not for public repo)
+INTERVIEW_NOTES.md
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
