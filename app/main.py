@@ -12,10 +12,26 @@ try:
 except ImportError:
     pass
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(levelname)s %(name)s %(message)s",
-)
+class _JsonFormatter(logging.Formatter):
+    """Emit each log record as a single JSON line for structured log ingestion."""
+    import json as _json
+
+    def format(self, record: logging.LogRecord) -> str:
+        import json, traceback as tb
+        payload = {
+            "ts": self.formatTime(record, "%Y-%m-%dT%H:%M:%SZ"),
+            "level": record.levelname,
+            "logger": record.name,
+            "msg": record.getMessage(),
+        }
+        if record.exc_info:
+            payload["exc"] = tb.format_exception(*record.exc_info)[-1].strip()
+        return json.dumps(payload)
+
+
+_handler = logging.StreamHandler()
+_handler.setFormatter(_JsonFormatter())
+logging.basicConfig(level=logging.INFO, handlers=[_handler])
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -48,6 +64,7 @@ from .session import build_internal_brief, build_internal_brief_json, get_recent
 from .store import (
     get_all_quotes, get_dashboard_stats, get_quote, init_db, save_enquiry, save_quote,
     get_pricing_overrides, set_pricing_field, get_pricing_history,
+    get_llm_metrics_summary,
 )
 
 # ---------------------------------------------------------------------------
@@ -253,6 +270,11 @@ def api_quotes_csv(_: str = Depends(_require_dashboard)) -> Response:
         content=buf.getvalue(), media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=quotes.csv"},
     )
+
+
+@app.get("/api/dashboard/llm-metrics")
+def api_llm_metrics(_: str = Depends(_require_dashboard)) -> dict:
+    return get_llm_metrics_summary()
 
 
 @app.post("/api/webhooks/test")

@@ -8,15 +8,15 @@
 
 ## SESSION CONTEXT (update each session)
 
-**Last session:** 2026-06-11 — CONTENT-004 done, BUG-004 fixed (99 tests), Railway project set up (build failed — needs fix)
+**Last session:** 2026-06-11 — OBS-001/OBS-002 done, Railway Dockerfile PORT fix, llm_metrics table + dashboard tiles
 **Server:** `http://localhost:8000` (dev) | `http://localhost:8000/dashboard` (dashboard, auth: admin/steeldoor)
 **Admin pricing:** `http://localhost:8000/admin/pricing` (same basic auth)
 **Stack:** Python 3.12 + FastAPI 0.111.0 + SQLite + Vercel serverless
 **Tests:** 99 passing (run: `cd app && ../.venv/Scripts/pytest ../tests -q`)
 **LLM:** GROQ active — `llama-3.3-70b-versatile`, key set in .env, multi-model fallback active
 **Live (Vercel):** https://steel-door-chat-bot.vercel.app
-**Railway project ID:** 9410b36f-1864-495e-8652-265258687098 (DEPLOY-001 — build failed, needs Dockerfile fix)
-**Next priorities:** DEPLOY-001 (Railway build fix), OBS-001 (LLM metrics), OBS-002 (structured logging), AI-008 (RAG)
+**Railway project ID:** 9410b36f-1864-495e-8652-265258687098 (DEPLOY-001 — Dockerfile fixed, railway.json added — trigger redeploy in Railway dashboard)
+**Next priorities:** AI-008 (RAG — largest task), DEPLOY-001 verify (check Railway build after redeploy), then remaining nice-to-haves
 
 ---
 
@@ -190,14 +190,17 @@
 - [x] **DASH-005** — CSV exports (S111)
   - `GET /api/dashboard/sessions.csv` + `/api/dashboard/quotes.csv` (auth-protected)
 
-- [ ] **OBS-001** — LLM cost + latency tracking
-  - Track tokens used + latency per chat request
-  - Store in SQLite `llm_metrics` table
-  - Show on dashboard
+- [x] **OBS-001** — LLM cost + latency tracking (done this session)
+  - `llm_metrics` SQLite table: session_id, provider, model, latency_ms, tokens, success
+  - `save_llm_metric()` / `get_llm_metrics_summary()` in store.py
+  - `_openai_compatible_reply()` in chat.py now records latency + tokens per call
+  - Dashboard: 3 new KPI tiles — LLM Calls, Avg Latency (ms), Tokens Used
+  - `GET /api/dashboard/llm-metrics` endpoint (auth-protected)
 
-- [ ] **OBS-002** — Structured JSON logging
-  - Replace print() with structlog or Python logging JSON formatter
-  - Include: session_id, readiness_score, routing, LLM provider, latency
+- [x] **OBS-002** — Structured JSON logging (done this session)
+  - `_JsonFormatter` in main.py: each log record emits `{ts, level, logger, msg}` JSON
+  - Replaced all `print()` calls in chat.py + hubspot.py with `logger.warning/info/error`
+  - `import sys` and `import traceback` removed from hubspot.py (no longer needed)
 
 - [x] **AUTH-001** — Dashboard auth (S110)
   - HTTPBasic on `/dashboard`, `/api/dashboard/stats`, `/api/dashboard/sessions`

@@ -14,12 +14,14 @@ from __future__ import annotations
 import logging
 import os
 import re
+import time
 from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 from .catalogue import CATALOGUE
 from .models import ChatRequest, ChatResponse, QuoteRequest, QuoteResponse, SessionState
+from .store import save_llm_metric
 from .quoting import PRICING, calculate_quote
 from .session import (
     ConversationSession,
@@ -634,6 +636,7 @@ def _openai_compatible_reply(
     system_prompt: str,
     history: list,
     user_content: str,
+    session_id: str | None = None,
 ) -> str:
     import httpx
 
@@ -659,18 +662,30 @@ def _openai_compatible_reply(
 
     last_exc: Exception = RuntimeError("no models tried")
     for attempt_model in fallback_models:
+        t0 = time.monotonic()
         resp = httpx.post(
             f"{base_url}/chat/completions",
             headers={"Authorization": f"Bearer {api_key}"},
             json={"model": attempt_model, "messages": messages, "max_tokens": 400},
             timeout=30.0,
         )
+        latency_ms = int((time.monotonic() - t0) * 1000)
         if resp.status_code == 429:
             logger.warning("Groq 429 on %s, trying next model", attempt_model)
+            save_llm_metric(session_id, provider, attempt_model, latency_ms, success=False)
             last_exc = Exception(f"429 on {attempt_model}")
             continue
         resp.raise_for_status()
-        return resp.json()["choices"][0]["message"]["content"]
+        data = resp.json()
+        usage = data.get("usage", {})
+        save_llm_metric(
+            session_id, provider, attempt_model, latency_ms,
+            prompt_tokens=usage.get("prompt_tokens"),
+            completion_tokens=usage.get("completion_tokens"),
+            total_tokens=usage.get("total_tokens"),
+            success=True,
+        )
+        return data["choices"][0]["message"]["content"]
     raise last_exc
 
 
@@ -865,11 +880,10 @@ def handle_chat(req: ChatRequest) -> ChatResponse:
         import sys as _sys
         hs_ok = push_to_hubspot(s, quote_total=_qt)
         if not hs_ok:
-            token_set = bool(__import__("os").environ.get("HUBSPOT_ACCESS_TOKEN"))
-            print(
-                f"[HUBSPOT SKIPPED/FAILED] session={s.session_id} score={s.readiness_score} "
-                f"token_set={token_set}",
-                file=_sys.stderr, flush=True,
+            token_set = bool(os.environ.get("HUBSPOT_ACCESS_TOKEN"))
+            logger.warning(
+                "[HUBSPOT SKIPPED/FAILED] session=%s score=%s token_set=%s",
+                s.session_id, s.readiness_score, token_set,
             )
 
     # Email brief to sales team once score hits 70
@@ -917,7 +931,7 @@ def handle_chat(req: ChatRequest) -> ChatResponse:
     if cfg and os.environ.get(cfg["key_env"]):
         try:
             system_prompt = _build_system_prompt(s, missing)
-            reply = _openai_compatible_reply(provider, system_prompt, req.history, user_content)
+            reply = _openai_compatible_reply(provider, system_prompt, req.history, user_content, session_id=s.session_id)
         except Exception as exc:
             logger.warning("LLM call failed (%s), falling back to mock: %s", provider, exc)
             reply = _mock_reply(s, quote if new_quote else None, req.message, new_quote)

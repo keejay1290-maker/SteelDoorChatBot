@@ -92,6 +92,9 @@
     <div class="kpi"><span class="label">Avg Quote Value</span><span class="value" id="kpi-avg">—</span><span class="sub">inc. VAT</span></div>
     <div class="kpi"><span class="label">Conversion Rate</span><span class="value" id="kpi-conv">—</span><span class="sub">sessions → contacts</span></div>
     <div class="kpi"><span class="label">Enquiries</span><span class="value" id="kpi-enq">—</span><span class="sub">form submissions</span></div>
+    <div class="kpi"><span class="label">LLM Calls</span><span class="value" id="kpi-llm-calls">—</span><span class="sub">AI requests total</span></div>
+    <div class="kpi"><span class="label">Avg Latency</span><span class="value" id="kpi-llm-latency">—</span><span class="sub">ms per AI call</span></div>
+    <div class="kpi"><span class="label">Tokens Used</span><span class="value" id="kpi-llm-tokens">—</span><span class="sub">total tokens</span></div>
   </div>
 
   <div class="grid2">
@@ -152,9 +155,10 @@ function ago(iso) {
 }
 
 async function load() {
-  const [stats, sessions] = await Promise.all([
+  const [stats, sessions, llm] = await Promise.all([
     fetch('/api/dashboard/stats').then(r => r.json()),
     fetch('/api/dashboard/sessions').then(r => r.json()),
+    fetch('/api/dashboard/llm-metrics').then(r => r.json()).catch(() => ({})),
   ]);
 
   // KPIs
@@ -164,6 +168,9 @@ async function load() {
   document.getElementById('kpi-avg').textContent = stats.avg_quote_value ? '£' + stats.avg_quote_value.toLocaleString() : '—';
   document.getElementById('kpi-conv').textContent = stats.conversion_rate + '%';
   document.getElementById('kpi-enq').textContent = stats.enquiries;
+  document.getElementById('kpi-llm-calls').textContent = llm.total_calls ?? '—';
+  document.getElementById('kpi-llm-latency').textContent = llm.avg_latency_ms ? llm.avg_latency_ms + 'ms' : '—';
+  document.getElementById('kpi-llm-tokens').textContent = llm.total_tokens_used ? llm.total_tokens_used.toLocaleString() : '—';
   document.getElementById('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
 
   // Products chart

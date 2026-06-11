@@ -152,12 +152,8 @@ def push_to_hubspot(s: "ConversationSession", quote_total: Optional[float] = Non
             "HubSpot OK: contact=%s deal=%s score=%s name=%s",
             contact_id, deal_id, s.readiness_score, s.name,
         )
-        print(f"[HUBSPOT OK] contact={contact_id} deal={deal_id} name={s.name}", flush=True)
         return True
 
     except Exception as exc:
-        import sys
-        import traceback
         logger.error("HubSpot push FAILED: %s", exc, exc_info=True)
-        print(f"[HUBSPOT ERROR] {exc}\n{traceback.format_exc()}", file=sys.stderr, flush=True)
         return False
