@@ -1,6 +1,8 @@
 """FastAPI application: API routes + static web chat UI."""
 from __future__ import annotations
 
+import os
+import secrets
 import uuid
 from pathlib import Path
 
@@ -10,8 +12,9 @@ try:
 except ImportError:
     pass
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import FileResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 
 from .catalogue import CATALOGUE
@@ -26,7 +29,25 @@ from .models import (
 )
 from .quoting import calculate_quote
 from .session import build_internal_brief, get_recent_sessions, load_session
-from .store import get_dashboard_stats, init_db, save_enquiry, save_quote
+from .store import get_dashboard_stats, get_quote, init_db, save_enquiry, save_quote
+
+_basic = HTTPBasic()
+
+
+def _require_dashboard(credentials: HTTPBasicCredentials = Depends(_basic)) -> str:
+    expected_user = os.environ.get("DASHBOARD_USER", "admin").encode()
+    expected_pass = os.environ.get("DASHBOARD_PASS", "steeldoor").encode()
+    ok = (
+        secrets.compare_digest(credentials.username.encode(), expected_user)
+        and secrets.compare_digest(credentials.password.encode(), expected_pass)
+    )
+    if not ok:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
 
 app = FastAPI(title="Steel Door Company — Quote Assistant", version="0.4.0")
 
@@ -37,6 +58,8 @@ STATIC_DIR = Path(__file__).parent / "static"
 @app.on_event("startup")
 def _startup() -> None:
     init_db()
+    from .seed import seed_demo_data
+    seed_demo_data()
 
 
 @app.get("/health")
@@ -57,6 +80,14 @@ def api_quote(req: QuoteRequest) -> QuoteResponse:
         raise HTTPException(status_code=422, detail=f"Unsupported option: {exc}") from exc
     save_quote(quote)
     return quote
+
+
+@app.get("/api/quote/{reference}")
+def api_get_quote(reference: str) -> dict:
+    q = get_quote(reference)
+    if not q:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    return q
 
 
 @app.post("/api/chat", response_model=ChatResponse)
@@ -100,17 +131,17 @@ def api_get_brief(session_id: str) -> dict:
 
 
 @app.get("/api/dashboard/stats")
-def api_dashboard_stats() -> dict:
+def api_dashboard_stats(_: str = Depends(_require_dashboard)) -> dict:
     return get_dashboard_stats()
 
 
 @app.get("/api/dashboard/sessions")
-def api_dashboard_sessions() -> list:
+def api_dashboard_sessions(_: str = Depends(_require_dashboard)) -> list:
     return get_recent_sessions(50)
 
 
 @app.get("/dashboard")
-def dashboard() -> FileResponse:
+def dashboard(_: str = Depends(_require_dashboard)) -> FileResponse:
     return FileResponse(STATIC_DIR / "dashboard.html")
 
 
