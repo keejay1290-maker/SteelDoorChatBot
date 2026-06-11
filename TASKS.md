@@ -8,16 +8,17 @@
 
 ## SESSION CONTEXT (update each session)
 
-**Last session:** 2026-06-11 (S116) — AI-008 RAG done + full Opus audit (30 checks). Fixed SEC-03/SEC-04/COR-04/CODE-05. 131 tests passing
+**Last session:** 2026-06-11 (S116) — AI-008 RAG, full Opus audit (fixed SEC-03/04, COR-04, CODE-05), + Supabase Postgres dual-backend (durable prod storage). 131 tests passing. ⚠️ Read .claude/COMMON_MISTAKES.md + .claude/WORKFLOW.md first.
 **Server:** `http://localhost:8000` (dev) | `http://localhost:8000/dashboard` (dashboard, auth: admin/steeldoor)
 **Admin pricing:** `http://localhost:8000/admin/pricing` (same basic auth)
 **Stack:** Python 3.12 + FastAPI 0.111.0 + SQLite + Vercel serverless
 **Tests:** 131 passing, 2 skipped (run: `.\.venv\Scripts\python.exe -m pytest tests/ -q`)
 **LLM:** GROQ active — `llama-3.3-70b-versatile`, key set in .env, multi-model fallback active
-**Live (Vercel):** https://steel-door-chat-bot.vercel.app
-**Railway URL:** https://steeldoorchatbot-production.up.railway.app (LIVE — /health returns ok)
+**Live (Vercel):** https://steel-door-chat-bot.vercel.app (git-linked, auto-builds on push)
+**Railway URL:** https://steeldoorchatbot-production.up.railway.app (LIVE — /health ok, on Supabase Postgres)
+**Database:** Supabase Postgres `kzjtwdkvxhhhmlckgthf` (eu-west-1) via transaction pooler. Dual-backend: SQLite local/tests, Postgres prod (DATABASE_URL/POSTGRES_URL). Keys on Desktop.
 **Railway project ID:** 9410b36f-1864-495e-8652-265258687098 | Service: 377437d8 | Env: ac0f4b9c
-**Railway deploy cmd:** `RAILWAY_API_TOKEN=ddd08363-... railway up --detach` (does NOT auto-deploy from GitHub push — use CLI)
+**Railway deploy cmd:** `RAILWAY_API_TOKEN=<token> railway up --detach` (token in local .env; does NOT auto-deploy from GitHub push — use CLI)
 **Next priorities:** Owner-decision items from audit (SEC-02 session-endpoint PII auth, PERF-02 extraction guard, PROD-02/03 Vercel env verify), then Phase-2 nice-to-haves (WhatsApp, email parse, vision)
 
 ---
@@ -160,6 +161,13 @@
   - Top-3 chunks injected into _build_system_prompt() with citation instruction
   - LLM replies cite source: "According to [BS 476-22]: ..."
   - 22 new tests in tests/test_rag.py (121 total, 2 skipped)
+
+- [x] **DB-001** — Supabase Postgres dual-backend for durable production storage (S116)
+  - `app/db.py`: backend abstraction. Postgres when DATABASE_URL/POSTGRES_URL set, else SQLite.
+  - Solves: SQLite at /tmp on Railway/Vercel wiped on every cold start (leads/quotes lost).
+  - Connection: Supabase transaction pooler (IPv4, eu-west-1, port 6543). Direct 5432 is IPv6-only, unusable on serverless.
+  - store.py/session.py route SQL through db.q() + dialect fragments. Verified live against Postgres 17.6.
+  - SQLite path byte-identical (131 tests). conftest pops DATABASE_URL so tests never touch prod.
 
 - [x] **PRICE-001** — Admin pricing table UI (S112 commit)
   - `/admin/pricing` — dark-themed editable table, 25 fields grouped by category
