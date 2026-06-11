@@ -31,14 +31,15 @@
 
   .sdc-backdrop {
     position: fixed; inset: 0; z-index: 0;
-    background-image: url('/static/images/sdc_backdrop.png');
-    background-size: cover; background-position: center top;
+    background-color: #111;
+    background-image: url('/static/images/external_patio_door.jpg');
+    background-size: cover; background-position: center center;
     background-repeat: no-repeat;
   }
   .sdc-backdrop::after {
     content: '';
     position: absolute; inset: 0;
-    background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.4) 60%, rgba(0,0,0,.75) 100%);
+    background: linear-gradient(180deg, rgba(0,0,0,.62) 0%, rgba(0,0,0,.52) 50%, rgba(0,0,0,.82) 100%);
   }
 
   /* ── NAVBAR ───────────────────────────────────────────────── */
@@ -161,6 +162,65 @@
     .product-section { padding: 28px 16px 36px; }
     .product-section h2 { font-size: .68rem; }
   }
+  /* On mobile: hide the inline product section, show bottom sheet instead */
+  @media (max-width: 700px) {
+    .product-section { display: none; }
+  }
+
+  /* ── MOBILE BOTTOM SHEET ─────────────────────────────────── */
+  .sheet-bar {
+    display: none;
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+    background: rgba(18,18,18,.97); backdrop-filter: blur(8px);
+    border-top: 1px solid rgba(255,255,255,.12);
+    padding: 12px 20px 16px;
+    /* safe-area for iPhone home bar */
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+  @media (max-width: 700px) { .sheet-bar { display: block; } }
+  .sheet-bar-inner {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .sheet-bar-label { font-size: .75rem; font-weight: 700; color: #fff; letter-spacing: .08em; text-transform: uppercase; }
+  .sheet-bar-btn {
+    background: var(--gold); color: #000; border: none; border-radius: 6px;
+    padding: 9px 20px; font-size: .78rem; font-weight: 700; cursor: pointer;
+    letter-spacing: .04em; display: flex; align-items: center; gap: 6px; white-space: nowrap;
+  }
+  .sheet-bar-btn svg { width: 12px; height: 12px; }
+
+  .bottom-sheet {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 250;
+    background: #141414; border-radius: 20px 20px 0 0;
+    border-top: 1px solid rgba(255,255,255,.12);
+    transform: translateY(100%); transition: transform .3s cubic-bezier(.4,0,.2,1);
+    max-height: 80vh; overflow-y: auto;
+    /* safe-area padding */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .bottom-sheet.open { transform: translateY(0); }
+  .bottom-sheet-handle {
+    width: 36px; height: 4px; background: rgba(255,255,255,.2); border-radius: 2px;
+    margin: 12px auto 0;
+  }
+  .bottom-sheet-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px 10px;
+  }
+  .bottom-sheet-title { font-size: .72rem; font-weight: 700; color: var(--gold); letter-spacing: .12em; text-transform: uppercase; }
+  .bottom-sheet-close {
+    background: none; border: none; color: rgba(255,255,255,.6); font-size: 1.4rem;
+    line-height: 1; cursor: pointer; padding: 0 4px;
+  }
+  .bottom-sheet-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+    padding: 0 16px 24px;
+  }
+  .sheet-scrim {
+    display: none; position: fixed; inset: 0; z-index: 240;
+    background: rgba(0,0,0,.6);
+  }
+  .sheet-scrim.visible { display: block; }
 
   /* ── GALLERY OVERLAY (grid) ───────────────────────────────── */
   .gallery-overlay {
@@ -525,6 +585,49 @@
   </div>
 </div>
 
+<!-- MOBILE BOTTOM SHEET BAR (visible ≤700px) -->
+<div class="sheet-bar">
+  <div class="sheet-bar-inner">
+    <span class="sheet-bar-label">Browse Our Range</span>
+    <button class="sheet-bar-btn" onclick="openSheet()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg>
+      View Doors
+    </button>
+  </div>
+</div>
+
+<!-- MOBILE BOTTOM SHEET PANEL -->
+<div class="sheet-scrim" id="sheet-scrim" onclick="closeSheet()"></div>
+<div class="bottom-sheet" id="bottom-sheet">
+  <div class="bottom-sheet-handle"></div>
+  <div class="bottom-sheet-header">
+    <span class="bottom-sheet-title">Browse Our Range</span>
+    <button class="bottom-sheet-close" onclick="closeSheet()">✕</button>
+  </div>
+  <div class="bottom-sheet-grid">
+    <div class="product-tile" onclick="closeSheet();openChatWithType('single steel door')">
+      <img src="https://steeldoorcompany.co.uk/cdn/shop/files/single_door.png?v=1770897895&width=480" alt="Single Doors" loading="lazy" onerror="this.style.display='none'"/>
+      <div class="product-tile-label">Single Doors</div>
+    </div>
+    <div class="product-tile" onclick="closeSheet();openChatWithType('double steel door')">
+      <img src="https://steeldoorcompany.co.uk/cdn/shop/files/single_door.png?v=1770897895&width=480" alt="Double Doors" loading="lazy" onerror="this.style.display='none'"/>
+      <div class="product-tile-label">Double Doors</div>
+    </div>
+    <div class="product-tile" onclick="closeSheet();openChatWithType('fire rated steel door')">
+      <img src="https://steeldoorcompany.co.uk/cdn/shop/files/single_door.png?v=1770897895&width=480" alt="Fire Rated" loading="lazy" onerror="this.style.display='none'"/>
+      <div class="product-tile-label">Fire Rated</div>
+    </div>
+    <div class="product-tile" onclick="closeSheet();openChatWithType('external steel door')">
+      <img src="https://steeldoorcompany.co.uk/cdn/shop/files/63D5CB37-D804-4E4A-8879-B48B01A8AE39.png?v=1771343755&width=480" alt="External" loading="lazy" onerror="this.style.display='none'"/>
+      <div class="product-tile-label">External</div>
+    </div>
+    <div class="product-tile" onclick="closeSheet();openChatWithType('wine room steel door')">
+      <img src="https://steeldoorcompany.co.uk/cdn/shop/files/IMG_9077.jpg?v=1743781769&width=480" alt="Wine Room" loading="lazy" onerror="this.style.display='none'"/>
+      <div class="product-tile-label">Wine Room</div>
+    </div>
+  </div>
+</div>
+
 <!-- DASHBOARD LINK -->
 <a href="/dashboard" class="dash-link">Staff Dashboard</a>
 
@@ -663,6 +766,18 @@ function toggleMobileNav() {
 }
 function closeMobileNav() {
   document.getElementById('mobile-nav').classList.remove('open');
+}
+
+// ── Product bottom sheet ──────────────────────────────────
+function openSheet() {
+  document.getElementById('bottom-sheet').classList.add('open');
+  document.getElementById('sheet-scrim').classList.add('visible');
+  document.body.style.overflow = 'hidden';
+}
+function closeSheet() {
+  document.getElementById('bottom-sheet').classList.remove('open');
+  document.getElementById('sheet-scrim').classList.remove('visible');
+  document.body.style.overflow = '';
 }
 
 // ── Chat open/close ───────────────────────────────────────
