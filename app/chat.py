@@ -563,7 +563,7 @@ _PROVIDERS = {
         "base_url_env": "GROQ_BASE_URL",
         "default_base_url": "https://api.groq.com/openai/v1",
         "model_env": "GROQ_MODEL",
-        "default_model": "llama-3.3-70b-versatile",
+        "default_model": "llama-3.1-8b-instant",
     },
     "deepseek": {
         "key_env": "DEEPSEEK_API_KEY",
@@ -600,14 +600,31 @@ def _openai_compatible_reply(
         messages.append({"role": msg.role, "content": msg.content})
     messages.append({"role": "user", "content": user_content})
 
-    resp = httpx.post(
-        f"{base_url}/chat/completions",
-        headers={"Authorization": f"Bearer {api_key}"},
-        json={"model": model, "messages": messages, "max_tokens": 400},
-        timeout=30.0,
-    )
-    resp.raise_for_status()
-    return resp.json()["choices"][0]["message"]["content"]
+    # Fallback model list — all free on Groq, ordered fastest→largest
+    _GROQ_FALLBACK_MODELS = [
+        model,
+        "llama-3.1-8b-instant",
+        "gemma2-9b-it",
+        "llama3-8b-8192",
+    ]
+    seen = set()
+    fallback_models = [m for m in _GROQ_FALLBACK_MODELS if not (m in seen or seen.add(m))]
+
+    last_exc: Exception = RuntimeError("no models tried")
+    for attempt_model in fallback_models:
+        resp = httpx.post(
+            f"{base_url}/chat/completions",
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={"model": attempt_model, "messages": messages, "max_tokens": 400},
+            timeout=30.0,
+        )
+        if resp.status_code == 429:
+            logger.warning("Groq 429 on %s, trying next model", attempt_model)
+            last_exc = Exception(f"429 on {attempt_model}")
+            continue
+        resp.raise_for_status()
+        return resp.json()["choices"][0]["message"]["content"]
+    raise last_exc
 
 
 def _format_quote(quote: QuoteResponse) -> str:

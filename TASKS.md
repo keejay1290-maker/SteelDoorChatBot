@@ -8,12 +8,12 @@
 
 ## SESSION CONTEXT (update each session)
 
-**Last session:** S110 (2026-06-11) — Full UPGRADE_PLAN.md executed (Phases 0-3)
+**Last session:** 2026-06-11 — Phase 2 complete, conversation UX fixes, Vercel prod deploy, GROQ multi-model fallback
 **Server:** `http://localhost:8000` (dev) | `http://localhost:8000/dashboard` (dashboard, auth: admin/steeldoor)
 **Stack:** Python 3.12 + FastAPI 0.4.0 + SQLite + Vercel serverless
-**Tests:** 67/67 passing
-**LLM:** Set `LLM_PROVIDER=groq` + `GROQ_API_KEY=gsk_...` in `.env` for real AI
-**Live:** https://steel-door-chat-bot.vercel.app
+**Tests:** 82/82 passing
+**LLM:** GROQ_API_KEY set on Vercel (deployed 5c3eec1). Verify active: check Vercel Function Logs for "LLM call failed" — silence = GROQ working.
+**Live:** https://steel-door-chat-bot.vercel.app (last deploy: 5c3eec1)
 
 ---
 
@@ -65,25 +65,51 @@
 
 ### 🟡 HIGH — Sales Product Value
 
-- [ ] **UX-001** — "Book Free Survey" form modal
-  - When customer clicks "Book Free Survey" in quote card
-  - Form: name, email, phone, postcode, preferred date (date picker), notes
-  - Submit → save as enquiry + send EMAIL-001
-  - Currently just pre-fills the chat input — needs proper form
+- [x] **UX-001** — "Book Free Survey" form modal (S111)
+  - Modal form: name/email/phone/postcode/message, pre-filled from GET /api/session/{id}
+  - Submits to POST /api/enquiry
 
-- [ ] **UX-002** — Enquiry confirmation page / modal
-  - After enquiry captured: show reference number, expected response time, contact details
-  - Currently just a chat message
+- [x] **UX-002** — Enquiry confirmation panel (S111)
+  - Shows in chat window after form submit: reference, response time, contact details
+
+- [ ] **UI-004** — Fix hero text readability — text too grey/dim on backdrop 🔴
+  - Hero subtitle currently `rgba(255,255,255,.7)` — bump to `.9` or pure `#fff`
+  - Nav link colour `rgba(255,255,255,.75)` → `rgba(255,255,255,.9)`
+  - The `--muted: #888` used in trust strips is unreadable on dark — use `#ccc` minimum for anything on backdrop
+  - Quick 5-min CSS-only fix
+
+- [ ] **UI-005** — SDC homepage parity: full hero redesign 🟡
+  - **Nav:** Add functional links: Products → `/collections/all`, Gallery → open lightbox, Technical → `steeldoorcompany.co.uk/pages/technical`, About → `steeldoorcompany.co.uk/pages/about`
+  - **Hero trust strip** below headline (white text, tick icons):
+    `☑️ 2,000+ Installations Nationwide  ☑️ Same Day Quote  ☑️ Slimmest Steel Doors On The Market  ☑️ 24 Month Warranty  ☑️ Bespoke Made To Measure`
+  - **Product category tiles** grid under trust strip — 5 tiles, click → opens chat pre-filled with type:
+    - Single Doors → `https://steeldoorcompany.co.uk/cdn/shop/files/single_door.png?v=1770897895&width=480`
+    - Double Doors → `https://steeldoorcompany.co.uk/cdn/shop/files/single_door.png?v=1770897895&width=480`
+    - Fire Rated → same image (no dedicated URL found in scrape)
+    - External → `https://steeldoorcompany.co.uk/cdn/shop/files/63D5CB37-D804-4E4A-8879-B48B01A8AE39.png?v=1771343755&width=480`
+    - Wine Room → `https://steeldoorcompany.co.uk/cdn/shop/files/IMG_9077.jpg?v=1743781769&width=480`
+  - **Backdrop parallax** — subtle `background-attachment: fixed` or JS scroll offset on `.sdc-backdrop`
+  - **"Why Choose"** section: fitters copy, 20mm profile copy from real site
+
+- [ ] **UI-006** — Working gallery lightbox 🟡
+  - "View Gallery" button opens a full-screen image grid / lightbox
+  - Source: real SDC CDN images identified in S111 scrape:
+    - `https://steeldoorcompany.co.uk/cdn/shop/files/IMG_8938.jpg?v=1750852840`
+    - `https://steeldoorcompany.co.uk/cdn/shop/files/IMG_0311_1.jpg?v=1770113145` (Olly Murs)
+    - `https://steeldoorcompany.co.uk/cdn/shop/files/GL.png?v=1770804345` (Gabby Logan)
+    - `https://steeldoorcompany.co.uk/cdn/shop/files/63D5CB37-D804-4E4A-8879-B48B01A8AE39.png?v=1771343755`
+    - `https://steeldoorcompany.co.uk/cdn/shop/files/IMG_9077.jpg?v=1743781769`
+  - Click image → full-screen lightbox, left/right nav, ESC to close
+  - "View more on Instagram @steeldoorcompany" link at bottom
 
 - [ ] **UX-003** — Mobile-responsive layout
   - Sidebar + right panel hidden on mobile (already done via media query)
   - Need to test on actual mobile viewport
   - Collapsible product list as bottom sheet on mobile
 
-- [ ] **BRIEF-001** — Structured JSON brief for CRM push
-  - Route: `GET /api/session/{id}/brief?format=json`
-  - Returns structured JSON matching HubSpot / Salesforce field names
-  - Include: contact, deal stage, line items, custom fields
+- [x] **BRIEF-001** — Structured JSON brief for CRM push (S111)
+  - `GET /api/session/{id}/brief?format=json` → structured dict with HubSpot field mappings
+  - `build_internal_brief_json()` in session.py
 
 - [ ] **CRM-001** — HubSpot webhook integration skeleton
   - POST to HubSpot on session complete (score ≥ 70 + email)
@@ -91,10 +117,9 @@
   - Env: `HUBSPOT_ACCESS_TOKEN`, `HUBSPOT_PIPELINE_ID`
   - Start with `httpx` call, add retry logic
 
-- [ ] **CRM-002** — Webhook endpoint for any CRM
-  - `POST /api/webhooks/crm` — generic outbound push when session completes
-  - Payload: JSON brief + quote ref + routing
-  - Configurable `WEBHOOK_URL` in env
+- [x] **CRM-002** — Generic outbound CRM webhook (S111)
+  - `app/webhook.py` — `fire_webhook(payload)` POSTs to `WEBHOOK_URL` on readiness ≥ 70
+  - Optional `WEBHOOK_SECRET` header; `/api/webhooks/test` endpoint for manual trigger
 
 - [x] **AI-007** — LLM-powered structured extraction (fallback to regex) (S110)
   - `_llm_extract_fields()` in `chat.py` — JSON-mode one-shot call, merges only fields regex missed
@@ -133,13 +158,11 @@
   - OCR + LLM extracts door schedule (door mark, size, type, fire rating, hardware)
   - Creates multiple sessions / line items
 
-- [ ] **DASH-004** — Revenue forecast chart
-  - Dashboard: pipeline value (sum of quote totals by stage)
-  - Historical trend: quotes per day, avg value per week
+- [x] **DASH-004** — Revenue chart (S111)
+  - 14-day pipeline revenue line chart (Chart.js) on dashboard
 
-- [ ] **DASH-005** — Export to CSV
-  - `GET /api/dashboard/sessions.csv` — all sessions as spreadsheet
-  - `GET /api/dashboard/quotes.csv` — all quotes
+- [x] **DASH-005** — CSV exports (S111)
+  - `GET /api/dashboard/sessions.csv` + `/api/dashboard/quotes.csv` (auth-protected)
 
 - [ ] **OBS-001** — LLM cost + latency tracking
   - Track tokens used + latency per chat request
@@ -165,20 +188,19 @@
   - API backend stays on Railway
   - CORS: allow Vercel domain
 
-- [ ] **TEST-002** — Session integration tests
-  - Test full multi-turn conversation (3+ messages)
-  - Assert session fields accumulate correctly
-  - Assert readiness score increases with each message
-  - Assert internal brief triggers at correct threshold
-
-- [ ] **TEST-003** — Brief generation tests
-  - Test `build_internal_brief()` with various partial sessions
-  - Assert all known fields appear in output
-  - Assert routing classification is correct
+- [x] **TEST-002** — Multi-turn integration tests (S111) — 5 tests in tests/test_integration.py
+- [x] **TEST-003** — Brief generation tests (S111) — 6 tests in tests/test_brief.py
 
 ---
 
 ## KNOWN BUGS / TECH DEBT
+
+- [ ] **BUG-005** — GROQ 429 rate limit causes silent fallback to mock 🔴
+  - Free tier: 30 req/min on `llama-3.3-70b-versatile`
+  - Verified in Vercel logs: first request 200, second 429 → mock reply
+  - Fix options: (a) add exponential backoff + 1 retry in `_openai_compatible_reply`, (b) switch to `llama-3.1-8b-instant` (higher free-tier limit), (c) add server-side per-session rate limiter to avoid hammering Groq on rapid messages
+  - Suggested fix: retry once after 1s on 429, then fall back to mock with a user-visible note
+  - Model swap: change `default_model` in `_PROVIDERS["groq"]` from `llama-3.3-70b-versatile` → `llama-3.1-8b-instant`
 
 - [ ] **BUG-001** — `_extract_fields` won't extract name from first-person intro mid-conversation
   - "It's for John Smith" → sometimes captures "John Smith" fails if surrounding context confuses regex
