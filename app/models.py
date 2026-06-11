@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 DoorSet = Literal["single", "double"]
 DoorType = Literal["internal", "external", "fire_rated", "wine_room"]
@@ -94,7 +94,7 @@ class EnquiryRequest(BaseModel):
     """A customer enquiry / lead, optionally attached to an estimate."""
 
     name: str = Field(..., min_length=1, max_length=120)
-    email: str = Field(..., min_length=3, max_length=200)
+    email: EmailStr
     phone: Optional[str] = Field(None, max_length=40)
     postcode: Optional[str] = Field(None, max_length=12)
     message: Optional[str] = Field(None, max_length=2000)
