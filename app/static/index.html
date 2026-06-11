@@ -506,6 +506,147 @@
   }
   .dash-link:hover { color: var(--gold); border-color: var(--gold); }
   @media (max-width: 700px) { .dash-link { display: none; } }
+
+  /* ── OUR STORY ─────────────────────────────────────────── */
+  html { scroll-behavior: smooth; }
+  .story-section {
+    position: relative; z-index: 10;
+    background: rgba(5,5,5,.88);
+    backdrop-filter: blur(6px);
+    border-top: 1px solid rgba(255,255,255,.07);
+    padding: 72px 48px;
+  }
+  .story-inner { max-width: 1100px; margin: 0 auto; }
+  .section-label {
+    font-size: .72rem; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 10px; font-weight: 700;
+  }
+  .section-heading {
+    font-size: clamp(1.3rem, 3vw, 2rem); font-weight: 900;
+    color: #fff; letter-spacing: .03em; text-transform: uppercase;
+    margin-bottom: 36px; line-height: 1.1;
+  }
+  .story-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 40px; margin-bottom: 44px;
+  }
+  .story-founder h3 {
+    color: var(--gold); font-size: .8rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .09em; margin-bottom: 10px;
+  }
+  .story-founder p { color: rgba(255,255,255,.78); font-size: .87rem; line-height: 1.75; }
+  .values-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+  }
+  .value-card {
+    background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.09);
+    border-radius: 8px; padding: 16px 14px;
+  }
+  .value-num {
+    color: var(--gold); font-size: .68rem; font-weight: 900;
+    letter-spacing: .1em; margin-bottom: 8px;
+  }
+  .value-card p { color: rgba(255,255,255,.68); font-size: .78rem; line-height: 1.6; }
+  .story-address {
+    margin-top: 36px; color: rgba(255,255,255,.42); font-size: .76rem; line-height: 2.2;
+    border-top: 1px solid rgba(255,255,255,.07); padding-top: 24px;
+  }
+  .story-address a { color: rgba(184,146,46,.85); text-decoration: none; }
+  .story-address a:hover { color: var(--gold-light); }
+  @media (max-width: 900px) {
+    .values-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 700px) {
+    .story-section { padding: 48px 16px; }
+    .story-grid { grid-template-columns: 1fr; gap: 24px; }
+    .values-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* ── OUR PROCESS ───────────────────────────────────────── */
+  .process-section {
+    position: relative; z-index: 10;
+    background: rgba(10,10,10,.82);
+    backdrop-filter: blur(6px);
+    border-top: 1px solid rgba(255,255,255,.07);
+    padding: 72px 48px 80px;
+  }
+  .process-inner { max-width: 1100px; margin: 0 auto; }
+  .process-intro { color: rgba(255,255,255,.65); font-size: .87rem; line-height: 1.7; max-width: 560px; margin-bottom: 48px; }
+  .process-steps {
+    display: grid; grid-template-columns: repeat(6, 1fr);
+    gap: 0; position: relative;
+  }
+  .process-steps::before {
+    content: ''; position: absolute; top: 27px; left: 28px; right: 28px; height: 1px;
+    background: linear-gradient(90deg, var(--gold) 0%, rgba(184,146,46,.2) 100%);
+    z-index: 0;
+  }
+  .process-step { position: relative; z-index: 1; padding: 0 8px; text-align: center; }
+  .step-num {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--gold); color: #000; font-weight: 900; font-size: 1rem;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px; flex-shrink: 0;
+  }
+  .step-name {
+    color: #fff; font-weight: 700; font-size: .73rem;
+    letter-spacing: .05em; text-transform: uppercase; margin-bottom: 8px;
+  }
+  .step-desc { color: rgba(255,255,255,.52); font-size: .74rem; line-height: 1.55; }
+  @media (max-width: 900px) {
+    .process-steps { grid-template-columns: repeat(3, 1fr); gap: 28px; }
+    .process-steps::before { display: none; }
+  }
+  @media (max-width: 700px) {
+    .process-section { padding: 48px 16px 56px; }
+    .process-steps { grid-template-columns: 1fr 1fr; gap: 24px; }
+  }
+
+  /* ── SHOP OVERLAY ──────────────────────────────────────── */
+  .shop-overlay {
+    position: fixed; inset: 0; z-index: 150;
+    background: rgba(0,0,0,.9); backdrop-filter: blur(10px);
+    display: flex; flex-direction: column;
+    overflow-y: auto; padding: 28px 24px;
+  }
+  .shop-overlay.hidden { display: none; }
+  .shop-header {
+    display: flex; align-items: center; justify-content: space-between;
+    max-width: 1100px; width: 100%; margin: 0 auto 28px; flex-shrink: 0;
+  }
+  .shop-header h2 {
+    font-size: 1.1rem; font-weight: 900; color: #fff;
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .shop-close {
+    background: none; border: 1px solid rgba(255,255,255,.2);
+    color: rgba(255,255,255,.7); border-radius: 6px; padding: 6px 14px;
+    font-size: .82rem; cursor: pointer;
+  }
+  .shop-close:hover { border-color: var(--gold); color: var(--gold); }
+  .shop-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    gap: 16px; max-width: 1100px; width: 100%; margin: 0 auto;
+  }
+  .shop-card {
+    background: #141414; border: 1px solid var(--border); border-radius: 10px;
+    overflow: hidden; display: flex; flex-direction: column;
+    transition: border-color .2s;
+  }
+  .shop-card:hover { border-color: var(--gold); }
+  .shop-card-img { width: 100%; aspect-ratio: 16/10; object-fit: cover; background: #1a1a1a; display: block; }
+  .shop-card-body { padding: 16px; flex: 1; display: flex; flex-direction: column; }
+  .shop-card-name { color: #fff; font-weight: 700; font-size: .88rem; margin-bottom: 4px; }
+  .shop-card-price { color: var(--gold); font-weight: 700; font-size: .82rem; margin-bottom: 8px; }
+  .shop-card-desc { color: rgba(255,255,255,.58); font-size: .76rem; line-height: 1.55; flex: 1; }
+  .shop-card-meta { color: rgba(255,255,255,.35); font-size: .7rem; margin-top: 6px; }
+  .shop-card-cta {
+    background: var(--gold); color: #000; border: none; border-radius: 5px;
+    padding: 8px 14px; font-size: .76rem; font-weight: 700; cursor: pointer;
+    margin-top: 14px; letter-spacing: .04em; transition: background .2s; align-self: flex-start;
+  }
+  .shop-card-cta:hover { background: var(--gold-light); }
+  @media (max-width: 560px) { .shop-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -520,9 +661,10 @@
   </div>
   <div class="sdc-nav-links">
     <a href="https://steeldoorcompany.co.uk/collections/all" target="_blank" rel="noopener">Products</a>
+    <a href="#" onclick="openShop();return false;">Shop</a>
     <a href="#" onclick="openGallery();return false;">Gallery</a>
     <a href="https://steeldoorcompany.co.uk/pages/technical" target="_blank" rel="noopener">Technical</a>
-    <a href="https://steeldoorcompany.co.uk/pages/about" target="_blank" rel="noopener">About</a>
+    <a href="#story" onclick="document.getElementById('story').scrollIntoView({behavior:'smooth'});return false;">Our Story</a>
     <a href="https://steeldoorcompany.co.uk/pages/case-studies" target="_blank" rel="noopener">Case Studies</a>
   </div>
   <a class="sdc-nav-cta" href="#" onclick="openChat();return false;">GET A QUOTE</a>
@@ -534,9 +676,10 @@
 <!-- MOBILE NAV DRAWER -->
 <div class="sdc-mobile-nav" id="mobile-nav">
   <a href="https://steeldoorcompany.co.uk/collections/all" target="_blank" rel="noopener">Products</a>
+  <a href="#" onclick="openShop();closeMobileNav();return false;">Shop</a>
   <a href="#" onclick="openGallery();closeMobileNav();return false;">Gallery</a>
   <a href="https://steeldoorcompany.co.uk/pages/technical" target="_blank" rel="noopener">Technical</a>
-  <a href="https://steeldoorcompany.co.uk/pages/about" target="_blank" rel="noopener">About</a>
+  <a href="#story" onclick="document.getElementById('story').scrollIntoView({behavior:'smooth'});closeMobileNav();return false;">Our Story</a>
   <a href="https://steeldoorcompany.co.uk/pages/case-studies" target="_blank" rel="noopener">Case Studies</a>
   <a href="#" onclick="openChat();closeMobileNav();return false;" style="color:var(--gold);font-weight:700;">Get a Quote</a>
 </div>
@@ -584,6 +727,92 @@
     </div>
   </div>
 </div>
+
+<!-- OUR STORY -->
+<section class="story-section" id="story">
+  <div class="story-inner">
+    <div class="section-label">About Us</div>
+    <h2 class="section-heading">Doing Things The Right Way</h2>
+    <div class="story-grid">
+      <div class="story-founder">
+        <h3>Sam Hackett — Manufacturing</h3>
+        <p>Sam comes from a manufacturing family with over four decades in the industry — his father built Leamore Windows from the ground up, starting in 1985. That background instilled an obsession with build quality and doing things properly. At Steel Door Company, Sam brings that same manufacturing-first discipline: every door leaves the factory right, or it doesn't leave at all.</p>
+      </div>
+      <div class="story-founder">
+        <h3>Josh — Digital &amp; Customer Experience</h3>
+        <p>Josh runs Grow.Online, a digital agency. The real spark behind Steel Door Company came from a personal experience: Josh ordered bifold doors and found the whole process frustrating, opaque, and impersonal. He co-founded SDC to prove there was a better way — one where the customer always knows what's happening, what it costs, and why.</p>
+      </div>
+    </div>
+    <div class="values-grid">
+      <div class="value-card">
+        <div class="value-num">01</div>
+        <p>Every customer gets the same level of care — whether you need one door or a full commercial fit-out.</p>
+      </div>
+      <div class="value-card">
+        <div class="value-num">02</div>
+        <p>Fast communication. We respond quickly and keep you informed at every stage without you having to chase.</p>
+      </div>
+      <div class="value-card">
+        <div class="value-num">03</div>
+        <p>No pressure sales. We give you the information and a clear estimate. The decision is always yours.</p>
+      </div>
+      <div class="value-card">
+        <div class="value-num">04</div>
+        <p>Transparent pricing. You'll know exactly what you're paying and why before you commit to anything.</p>
+      </div>
+      <div class="value-card">
+        <div class="value-num">05</div>
+        <p>We've been the customer. Josh's experience is the reason this company exists — and why we do it differently.</p>
+      </div>
+    </div>
+    <div class="story-address">
+      Unit C, Scarlet Court, Stafford, ST16 1YJ &nbsp;&middot;&nbsp;
+      <a href="tel:01785526016">01785 526016</a> &nbsp;&middot;&nbsp;
+      <a href="mailto:sales@steeldoorcompany.co.uk">sales@steeldoorcompany.co.uk</a>
+    </div>
+  </div>
+</section>
+
+<!-- OUR PROCESS -->
+<section class="process-section" id="process">
+  <div class="process-inner">
+    <div class="section-label">How It Works</div>
+    <h2 class="section-heading">From Enquiry to Installation</h2>
+    <p class="process-intro">From initial enquiry through to completion, every stage is clearly defined — so you know exactly what to expect throughout.</p>
+    <div class="process-steps">
+      <div class="process-step">
+        <div class="step-num">1</div>
+        <div class="step-name">Enquiry</div>
+        <div class="step-desc">Every project begins with a conversation. We take the time to understand your space and provide a clear estimate, typically within 24 hours.</div>
+      </div>
+      <div class="process-step">
+        <div class="step-num">2</div>
+        <div class="step-name">Survey</div>
+        <div class="step-desc">If you're happy to proceed, we arrange a site survey to take final measurements and confirm all details. We ask that you're present for this stage.</div>
+      </div>
+      <div class="process-step">
+        <div class="step-num">3</div>
+        <div class="step-name">Design</div>
+        <div class="step-desc">We finalise your specification — RAL colour, glass type, hardware finish, and door configuration — before moving to manufacture.</div>
+      </div>
+      <div class="process-step">
+        <div class="step-num">4</div>
+        <div class="step-name">Manufacture</div>
+        <div class="step-desc">Your doors are manufactured to exact specification. Lead times are 6–10 weeks depending on product type and complexity.</div>
+      </div>
+      <div class="process-step">
+        <div class="step-num">5</div>
+        <div class="step-name">Installation</div>
+        <div class="step-desc">Our own installation team fits your doors. We don't subcontract — the people who built it are the people who install it.</div>
+      </div>
+      <div class="process-step">
+        <div class="step-num">6</div>
+        <div class="step-name">Aftercare</div>
+        <div class="step-desc">24-month warranty on all installations. We're here after the job is done — just call the same number you started with.</div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- MOBILE BOTTOM SHEET BAR (visible ≤700px) -->
 <div class="sheet-bar">
@@ -754,6 +983,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     if (!document.getElementById('gallery-viewer').classList.contains('hidden')) { closeViewer(); return; }
     if (!document.getElementById('gallery-overlay').classList.contains('hidden')) { closeGallery(); return; }
+    if (!document.getElementById('shop-overlay').classList.contains('hidden')) { closeShop(); return; }
     closeChat();
   }
   if (e.key === 'ArrowRight' && !document.getElementById('gallery-viewer').classList.contains('hidden')) stepViewer(1);
@@ -777,6 +1007,16 @@ function openSheet() {
 function closeSheet() {
   document.getElementById('bottom-sheet').classList.remove('open');
   document.getElementById('sheet-scrim').classList.remove('visible');
+  document.body.style.overflow = '';
+}
+
+// ── Shop overlay ──────────────────────────────────────────
+function openShop() {
+  document.getElementById('shop-overlay').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+function closeShop() {
+  document.getElementById('shop-overlay').classList.add('hidden');
   document.body.style.overflow = '';
 }
 
@@ -1028,6 +1268,86 @@ addMsg('bot',
   null
 );
 </script>
+
+<!-- SHOP OVERLAY -->
+<div class="shop-overlay hidden" id="shop-overlay">
+  <div class="shop-header">
+    <h2>All Door Types — Prices From</h2>
+    <button class="shop-close" onclick="closeShop()">Close &#x2715;</button>
+  </div>
+  <div class="shop-grid">
+    <div class="shop-card">
+      <img class="shop-card-img" src="https://steeldoorcompany.co.uk/cdn/shop/files/single_door.png?v=1770897895&width=480" alt="Single Steel Door" loading="lazy" onerror="this.style.display='none'"/>
+      <div class="shop-card-body">
+        <div class="shop-card-name">Single Steel Door</div>
+        <div class="shop-card-price">From £1,700</div>
+        <div class="shop-card-desc">Made-to-measure single steel door. Ultra-slim 20mm sightlines, fully bespoke in any RAL colour. Hinged or pivot, inward or outward.</div>
+        <div class="shop-card-meta">Lead time: 6–8 weeks &nbsp;|&nbsp; Max 1000 × 3000mm</div>
+        <button class="shop-card-cta" onclick="closeShop();openChatWithType('single steel door')">Get a Quote</button>
+      </div>
+    </div>
+    <div class="shop-card">
+      <img class="shop-card-img" src="https://steeldoorcompany.co.uk/cdn/shop/files/single_door.png?v=1770897895&width=480" alt="Double Steel Doors" loading="lazy" onerror="this.style.display='none'"/>
+      <div class="shop-card-body">
+        <div class="shop-card-name">Double Steel Doors</div>
+        <div class="shop-card-price">From £3,000</div>
+        <div class="shop-card-desc">Made-to-measure double steel doors — perfect for kitchen-diner extensions, room dividers and garden access. Up to 1000mm per leaf.</div>
+        <div class="shop-card-meta">Lead time: 6–8 weeks &nbsp;|&nbsp; Max 2000 × 3000mm</div>
+        <button class="shop-card-cta" onclick="closeShop();openChatWithType('double steel door')">Get a Quote</button>
+      </div>
+    </div>
+    <div class="shop-card">
+      <img class="shop-card-img" src="https://steeldoorcompany.co.uk/cdn/shop/files/single_door.png?v=1770897895&width=480" alt="Fire Rated Steel Door" loading="lazy" onerror="this.style.display='none'"/>
+      <div class="shop-card-body">
+        <div class="shop-card-name">Fire Rated Steel Door (FD30/FD60)</div>
+        <div class="shop-card-price">From £3,400</div>
+        <div class="shop-card-desc">Jansen Economy 50 system. CE/UKCA marked to EN 1634 and BS 476. Sound insulation up to Rw 35 dB. Internal partitions, lobbies, stairwells.</div>
+        <div class="shop-card-meta">Lead time: 8–10 weeks &nbsp;|&nbsp; Survey-dependent</div>
+        <button class="shop-card-cta" onclick="closeShop();openChatWithType('fire rated steel door')">Get a Quote</button>
+      </div>
+    </div>
+    <div class="shop-card">
+      <img class="shop-card-img" src="https://steeldoorcompany.co.uk/cdn/shop/files/63D5CB37-D804-4E4A-8879-B48B01A8AE39.png?v=1771343755&width=480" alt="External Steel Patio Doors" loading="lazy" onerror="this.style.display='none'"/>
+      <div class="shop-card-body">
+        <div class="shop-card-name">External Steel Patio Doors</div>
+        <div class="shop-card-price">From £5,000</div>
+        <div class="shop-card-desc">100% steel external doors. 70mm profile depth, thermally broken. Thermal performance up to 2.2 W/(m²K). Sound reduction to 46 dB. CE/UKCA to EN 14351-1.</div>
+        <div class="shop-card-meta">Lead time: Survey-dependent &nbsp;|&nbsp; Max 3000 × 3000mm</div>
+        <button class="shop-card-cta" onclick="closeShop();openChatWithType('external steel patio door')">Get a Quote</button>
+      </div>
+    </div>
+    <div class="shop-card">
+      <img class="shop-card-img" src="https://steeldoorcompany.co.uk/cdn/shop/files/IMG_9077.jpg?v=1743781769&width=480" alt="Wine Room Steel Door" loading="lazy" onerror="this.style.display='none'"/>
+      <div class="shop-card-body">
+        <div class="shop-card-name">Wine Room Steel Door</div>
+        <div class="shop-card-price">From £2,300</div>
+        <div class="shop-card-desc">Climate-controlled wine room specialist door. Humidity-resistant sealing, specialist magnetic hardware, continuous brush seal. Maintains 55–65% RH and 10–15°C.</div>
+        <div class="shop-card-meta">Lead time: 8–10 weeks &nbsp;|&nbsp; Max 1000 × 2400mm</div>
+        <button class="shop-card-cta" onclick="closeShop();openChatWithType('wine room steel door')">Get a Quote</button>
+      </div>
+    </div>
+    <div class="shop-card">
+      <img class="shop-card-img" src="https://steeldoorcompany.co.uk/cdn/shop/files/single_door.png?v=1770897895&width=480" alt="Sliding Steel Door" loading="lazy" onerror="this.style.display='none'"/>
+      <div class="shop-card-body">
+        <div class="shop-card-name">Sliding Steel Door</div>
+        <div class="shop-card-price">From £4,750</div>
+        <div class="shop-card-desc">Space-saving made-to-measure sliding door. Single slide, double slide, or pocket configurations. Ultra-slim sightlines, smooth gliding operation.</div>
+        <div class="shop-card-meta">Lead time: 8–10 weeks &nbsp;|&nbsp; Max 1600 × 2500mm per panel</div>
+        <button class="shop-card-cta" onclick="closeShop();openChatWithType('sliding steel door')">Get a Quote</button>
+      </div>
+    </div>
+    <div class="shop-card">
+      <img class="shop-card-img" src="https://steeldoorcompany.co.uk/cdn/shop/files/single_door.png?v=1770897895&width=480" alt="Concertina Sliding Door" loading="lazy" onerror="this.style.display='none'"/>
+      <div class="shop-card-body">
+        <div class="shop-card-name">Concertina Sliding Door</div>
+        <div class="shop-card-price">From £5,250</div>
+        <div class="shop-card-desc">Multi-panel folding concertina door for wide openings. Maximum glass exposure, smooth fold-back operation.</div>
+        <div class="shop-card-meta">Lead time: 8–10 weeks &nbsp;|&nbsp; Max 1600 × 2500mm per panel</div>
+        <button class="shop-card-cta" onclick="closeShop();openChatWithType('concertina sliding door')">Get a Quote</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- SURVEY MODAL -->
 <div id="survey-modal" class="modal-backdrop hidden" onclick="if(event.target===this)closeSurveyModal()">
