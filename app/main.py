@@ -191,7 +191,8 @@ def api_chat(request: Request, req: ChatRequest) -> ChatResponse:
 
 
 @app.post("/api/enquiry", response_model=EnquiryResponse)
-def api_enquiry(req: EnquiryRequest) -> EnquiryResponse:
+@(_limiter.limit("10/minute") if _rate_limit_available else lambda f: f)
+def api_enquiry(request: Request, req: EnquiryRequest) -> EnquiryResponse:
     reference = "ENQ-" + uuid.uuid4().hex[:8].upper()
     enquiry_id = save_enquiry(req, reference)
     from .email_sender import send_enquiry_email

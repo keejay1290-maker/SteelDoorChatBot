@@ -263,3 +263,82 @@ Tests: **99 passing, 2 skipped** as of ce7c0fd.
 ---
 
 *Generated 2026-06-11 — for Opus/Fable audit pass.*
+
+---
+
+## AUDIT RESULTS — Opus pass (2026-06-11, S116)
+
+Tests after audit fixes: **131 passing, 2 skipped**. All findings below were
+triaged; FAILs with safe fixes were fixed in this pass.
+
+### 1. Security
+| Check | Result | Notes |
+|---|---|---|
+| SEC-01 SQL injection | ✅ PASS | All `execute()` parameterised with `?`. dashboard `json_extract` paths are literals, no user input. |
+| SEC-02 Auth on dashboard/admin | ✅ PASS | All `/dashboard`, `/api/dashboard/*`, `/admin/pricing`, `/api/admin/pricing` (GET/POST/DELETE), `/api/webhooks/test` carry `Depends(_require_dashboard)`. **Note:** `/api/session/{id}` + `/brief` return contact PII without auth (by design — unguessable `S-` + 10-hex token for frontend self-fetch). Acceptable for demo; for production gate behind a per-session token. |
+| SEC-03 PII in logs | 🔧 FIXED | Was FAIL: `hubspot.py` logged customer name, `email_sender.py` logged recipient emails at INFO. Now redacted to session_id / reference. |
+| SEC-04 Rate limiting | 🔧 FIXED | `/api/enquiry` was unlimited (form-spam vector). Added `@limiter.limit("10/minute")`. chat (20/min) + quote (30/min) already limited. |
+| SEC-05 Secrets in source | ✅ PASS | `git log --all -- .env` empty; `.env` gitignored + untracked; no `gsk_`/`pat-` literals in `.py`. |
+| SEC-06 CORS whitelist | ✅ PASS | `ALLOWED_ORIGINS` env-driven, specific default, no wildcard. |
+| SEC-07 HubSpot scope | ⚠️ NOTE | Pass criteria inaccurate — code DOES read contacts (`/contacts/search` POST + 409 PATCH fallback). Token needs `crm.objects.contacts.read` + `.write` + `deals.write`. Not a vuln; scope-doc correction. |
+
+### 2. Correctness
+| Check | Result | Notes |
+|---|---|---|
+| COR-01 readiness clamp | ✅ PASS | `min(score, 100)`; max reachable = exactly 100; no negative path. |
+| COR-02 quote ref collision | ✅ PASS | Ref is deterministic `SHA1[:8]` of full spec (not uuid4). `INSERT OR IGNORE` is intentional dedup — identical spec→identical ref. Cross-spec collision negligible. |
+| COR-03 schema drift | ✅ PASS | `load_session` filters to `__dataclass_fields__`; every field has a default → old rows never KeyError. |
+| COR-04 HubSpot fire-once | 🔧 FIXED | Was FAIL: HubSpot/webhook gated on `brief_email_sent`, which only flips on **successful SMTP send**. With SMTP unconfigured (demo default) → duplicate deals + re-fired webhooks on every later message. Added dedicated `hubspot_pushed` / `webhook_fired` persisted flags (success-gated, retry-on-failure). Regression tests in `test_crm_dedup.py`. |
+| COR-05 email dedup | ✅ PASS | `brief_email_sent` / `customer_email_sent` set then `save_session` persists before return. |
+| COR-06 PDF on Vercel | ✅ PASS | `pdf.py` uses `io.BytesIO` only — no filesystem writes. |
+| COR-07 threshold uplift | ✅ PASS | `test_threshold_weathered_extracted` passes. |
+
+### 3. Performance
+| Check | Result | Notes |
+|---|---|---|
+| PERF-01 conn per request | ✅ PASS | All DB calls use `with _connect()` — no leaks. |
+| PERF-02 LLM call when complete | ⚠️ NOTE | `_llm_extract_fields` still fires when all fields present (~800ms + tokens wasted late in convo). Low priority; left as-is to preserve correction-handling behaviour. Optional guard: skip when `not missing`. |
+| PERF-03 dashboard queries | ✅ PASS | All aggregates / LIMIT; no N+1. |
+
+### 4. UX / Frontend
+| Check | Result | Notes |
+|---|---|---|
+| UX-01 mobile z-index | ✅ PASS | `.chat-window` + `.chat-launcher` = 210 in mobile media query; sheet-bar 200. |
+| UX-02 shop ESC | ✅ PASS | keydown cascade: viewer → gallery → shop → chat, each `return`s. |
+| UX-03 broken-image fallback | ✅ PASS | Local `sdc_logo.png`, `gallery_1.jpg`, `wine_room_door.jpg` exist; logo→CDN fallback, CDN tiles→hide. |
+| UX-04 readiness animation | ✅ PASS | `transition: width .6s ease` on `.readiness-fill`. |
+| UX-05 shop CTAs | ✅ PASS | Cards call `closeShop();openChatWithType(...)`. |
+
+### 5. Code Quality
+| Check | Result | Notes |
+|---|---|---|
+| CODE-01 dead import chat.py | ✅ PASS | `import sys as _sys` removed (S116). |
+| CODE-02 unused imports hubspot.py | ✅ PASS | No `import sys`/`traceback`. |
+| CODE-03 _JsonFormatter double-import | ✅ PASS | Class-level `import json as _json` removed (S116). |
+| CODE-04 orphan fields | ✅ PASS | All `ConversationSession` fields read/computed/flag with purpose. |
+| CODE-05 test coverage gaps | 🔧 FIXED | Added `test_llm_metrics.py` (8 tests): `save_llm_metric` success+fail, summary shape/counts, `/api/dashboard/llm-metrics` auth+payload, `_JsonFormatter` JSON + exception. |
+
+### 6. Production Readiness
+| Check | Result | Notes |
+|---|---|---|
+| PROD-01 Railway | ✅ PASS | Deploy SUCCESS, `/health` ok, env vars set this session. |
+| PROD-02 Vercel env vars | ⏳ VERIFY | Cannot check from CLI — confirm `GROQ_API_KEY`, `HUBSPOT_ACCESS_TOKEN`, `DASHBOARD_PASS`, `ENQUIRY_DB=/tmp/enquiries.db` in Vercel dashboard. |
+| PROD-03 ENQUIRY_DB path | ⚠️ MITIGATED | `store.py` default still `enquiries.db`; Railway env set to `/tmp/enquiries.db` this session. Code default unchanged (changing breaks Windows local dev). Confirm same env var on Vercel. |
+| PROD-04 health endpoint | ✅ PASS | `{"status":"ok","version":"0.4.0"}`. |
+| PROD-05 GDPR | 📋 DOC | Documented gaps (no retention/deletion/consent) — interview talking points. |
+
+### 7. AI-008 RAG — verified live
+`app/rag.py` + 20 spec chunks. Live test on Railway: *"Does your FD30 fire door
+meet BS476 for an escape route?"* → reply cited **"According to BS 476-22 / BS EN
+1634-1"** and held the deterministic-pricing rule. ✅
+
+### Summary of fixes applied in this audit pass
+1. **SEC-03** — redacted customer PII (name/email) from INFO logs.
+2. **SEC-04** — rate-limited `/api/enquiry` (10/min).
+3. **COR-04** — dedicated `hubspot_pushed` / `webhook_fired` flags stop duplicate CRM pushes when SMTP is unconfigured.
+4. **CODE-05** — added llm_metrics + `_JsonFormatter` test coverage.
+
+Open items left for owner decision: SEC-02 session-endpoint PII auth, SEC-07
+HubSpot scope documentation, PERF-02 extraction guard, PROD-02/03 Vercel env verification.
+
+*Audited by Claude Opus 4.8 — 2026-06-11 (S116).*

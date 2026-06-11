@@ -873,20 +873,26 @@ def handle_chat(req: ChatRequest) -> ChatResponse:
             s, quote_total=quote.total if quote else None
         )
 
-    # Outbound CRM webhook + HubSpot push on first qualification (score 70 + email)
-    if s.readiness_score >= 70 and s.email and not s.brief_email_sent:
+    # Outbound CRM webhook + HubSpot push on first qualification (score 70 + email).
+    # Each gated by its OWN persisted success flag so a no-op SMTP send (demo default)
+    # can never cause repeated HubSpot deals / webhook fires on later messages.
+    if s.readiness_score >= 70 and s.email and (not s.hubspot_pushed or not s.webhook_fired):
         from .webhook import fire_webhook
         from .session import build_internal_brief_json
         from .hubspot import push_to_hubspot
         _qt = quote.total if quote else None
-        fire_webhook(build_internal_brief_json(s, quote_total=_qt))
-        hs_ok = push_to_hubspot(s, quote_total=_qt)
-        if not hs_ok:
-            token_set = bool(os.environ.get("HUBSPOT_ACCESS_TOKEN"))
-            logger.warning(
-                "[HUBSPOT SKIPPED/FAILED] session=%s score=%s token_set=%s",
-                s.session_id, s.readiness_score, token_set,
-            )
+        if not s.webhook_fired:
+            if fire_webhook(build_internal_brief_json(s, quote_total=_qt)):
+                s.webhook_fired = True
+        if not s.hubspot_pushed:
+            if push_to_hubspot(s, quote_total=_qt):
+                s.hubspot_pushed = True
+            else:
+                token_set = bool(os.environ.get("HUBSPOT_ACCESS_TOKEN"))
+                logger.warning(
+                    "[HUBSPOT SKIPPED/FAILED] session=%s score=%s token_set=%s",
+                    s.session_id, s.readiness_score, token_set,
+                )
 
     # Email brief to sales team once score hits 70
     if s.readiness_score >= 70 and s.email and s.internal_brief and not s.brief_email_sent:

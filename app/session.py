@@ -75,6 +75,8 @@ class ConversationSession:
     internal_brief: Optional[str] = None
     brief_email_sent: bool = False           # True after internal brief emailed to sales team
     customer_email_sent: bool = False        # True after quote confirmation email sent to customer
+    hubspot_pushed: bool = False             # True after lead successfully pushed to HubSpot (prevents duplicate deals)
+    webhook_fired: bool = False              # True after outbound CRM webhook successfully delivered
     quote_reference: Optional[str] = None
     needs: list = field(default_factory=list)  # fields still needed
 
