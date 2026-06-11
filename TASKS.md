@@ -8,7 +8,7 @@
 
 ## SESSION CONTEXT (update each session)
 
-**Last session:** S107 (2026-06-11)
+**Last session:** S109 (2026-06-11)
 **Server:** `http://localhost:8000` (dev) | `http://localhost:8000/dashboard` (dashboard)
 **Stack:** Python 3.12 + FastAPI 0.4.0 + SQLite + Playwright
 **Tests:** 36/36 passing
@@ -43,12 +43,13 @@
   - Go to https://console.groq.com/keys → Create key → add to `.env`: `LLM_PROVIDER=groq` + `GROQ_API_KEY=gsk_...`
   - Verify: `curl -X POST http://localhost:8000/api/chat -H "Content-Type: application/json" -d '{"message":"hello"}'`
 
-- [ ] **EMAIL-001** — Email internal brief to sales team on enquiry capture
-  - Trigger: when readiness score ≥ 70 AND email is collected
-  - Send to: `sales@steeldoorcompany.co.uk` (configurable via env `SALES_EMAIL`)
-  - Content: the `internal_brief` string
-  - Library: `smtplib` (stdlib) or `sendgrid` SDK
-  - Env vars needed: `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, `SALES_EMAIL`
+- [x] **EMAIL-001** — Email internal brief to sales team on enquiry capture (S109)
+  - Trigger: readiness ≥ 70 AND email collected AND `brief_email_sent=False`
+  - Sends to `SALES_EMAIL` (default: sales@steeldoorcompany.co.uk)
+  - `app/email_sender.py` — SMTP via stdlib smtplib, graceful no-op when unconfigured
+  - Env vars: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`, `SALES_EMAIL`
+  - `session.brief_email_sent` flag prevents duplicate sends
+  - 5 tests in `tests/test_email.py` (mock SMTP)
 
 - [ ] **EMAIL-002** — Email quote PDF confirmation to customer
   - Trigger: when quote is generated AND customer email is collected

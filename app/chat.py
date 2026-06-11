@@ -634,6 +634,19 @@ def handle_chat(req: ChatRequest) -> ChatResponse:
             s, quote_total=quote.total if quote else None
         )
 
+    # Email brief to sales team once score hits 70
+    if s.readiness_score >= 70 and s.email and s.internal_brief and not s.brief_email_sent:
+        from .email_sender import send_brief_email
+        sent = send_brief_email(
+            brief=s.internal_brief,
+            session_id=s.session_id,
+            readiness_score=s.readiness_score,
+            customer_name=s.name,
+            routing=s.routing,
+        )
+        if sent:
+            s.brief_email_sent = True
+
     missing = _what_is_missing(s)
     s.needs = missing[:5]
 
