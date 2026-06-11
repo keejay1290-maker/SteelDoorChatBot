@@ -152,6 +152,7 @@
   .routing-sales { background: rgba(96,165,250,.12); color: var(--blue); }
   .routing-survey { background: rgba(34,197,94,.12); color: var(--green); }
   .routing-installation { background: rgba(245,158,11,.12); color: var(--orange); }
+  .routing-customer_care { background: rgba(168,85,247,.12); color: #a855f7; }
 
   /* ── MESSAGES ─────────────────────────────────────────────── */
   .messages {
@@ -386,7 +387,7 @@ const CL_FIELDS = [
 ];
 
 const STAGE_LABELS = { 1:'Scoping', 2:'Specification', 3:'Contact', 4:'Complete' };
-const ROUTING_MAP  = { sales:'routing-sales', survey:'routing-survey', installation:'routing-installation' };
+const ROUTING_MAP  = { sales:'routing-sales', survey:'routing-survey', installation:'routing-installation', customer_care:'routing-customer_care' };
 
 function updateReadiness(session) {
   if (!session) return;

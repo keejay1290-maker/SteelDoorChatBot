@@ -59,8 +59,8 @@
   }
   .badge-sales { background: rgba(59,130,246,.2); color: var(--blue); }
   .badge-survey { background: rgba(34,197,94,.2); color: var(--green); }
-  .badge-install { background: rgba(245,158,11,.2); color: var(--orange); }
-  .badge-care { background: rgba(239,68,68,.2); color: var(--red); }
+  .badge-installation { background: rgba(245,158,11,.2); color: var(--orange); }
+  .badge-customer_care { background: rgba(168,85,247,.2); color: #a855f7; }
   .stage-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
   .stage-1 { background: #444; }
   .stage-2 { background: var(--orange); }
@@ -181,7 +181,7 @@ async function load() {
       labels: ['Sales', 'Survey', 'Installation', 'Customer Care'],
       datasets: [{
         data: Object.values(routingCounts),
-        backgroundColor: ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444'],
+        backgroundColor: ['#3b82f6', '#22c55e', '#f59e0b', '#a855f7'],
         borderWidth: 0,
       }]
     },

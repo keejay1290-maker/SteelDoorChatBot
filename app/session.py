@@ -104,14 +104,19 @@ def calculate_readiness(s: ConversationSession) -> int:
 
 
 def determine_routing(s: ConversationSession) -> str:
-    lowered = (s.internal_brief or "").lower()
-    if s.installation_required is False:
-        return "sales"  # supply-only → sales handles quote + dispatch
-    if s.stage >= 4 and s.email:
-        return "survey"  # full spec + contact → book a free site survey
-    if s.readiness_score >= 50 and s.email:
+    # Supply-only + fully specced → sales closes it (no site survey needed)
+    if s.installation_required is False and s.readiness_score >= 60:
         return "sales"
-    return "sales"  # default
+    # Full spec + contact info + installation wanted → book a site survey
+    if s.readiness_score >= 70 and s.email and s.installation_required is not False:
+        return "survey"
+    # Post-quote follow-up → customer care handles amendments/queries
+    if s.quote_reference and s.stage >= 4:
+        return "customer_care"
+    # Commercial project or large quantity order → installation team scoping
+    if s.project_context == "commercial" or (s.quantity or 0) >= 5:
+        return "installation"
+    return "sales"
 
 
 def build_internal_brief(s: ConversationSession, quote_total: Optional[float] = None) -> str:
