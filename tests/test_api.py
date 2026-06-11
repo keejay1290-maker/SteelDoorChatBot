@@ -172,3 +172,64 @@ def test_seed_skipped_without_flag(monkeypatch):
     from app.seed import seed_demo_data
     monkeypatch.delenv("SEED_DEMO", raising=False)
     assert seed_demo_data() == 0
+
+
+# ── TASK 2.1 — Rate limiting ─────────────────────────────────────────────────
+
+def test_rate_limiter_is_wired():
+    """Limiter must be attached to app.state so slowapi can intercept requests."""
+    from app.main import app as _app
+    try:
+        from slowapi import Limiter
+    except ImportError:
+        import pytest; pytest.skip("slowapi not installed")
+    assert hasattr(_app.state, "limiter")
+    assert isinstance(_app.state.limiter, Limiter)
+
+
+# ── TASK 2.2 — CORS ──────────────────────────────────────────────────────────
+
+def test_cors_preflight_allowed_origin():
+    """Preflight from allowed origin returns Access-Control-Allow-Origin."""
+    res = client.options(
+        "/api/chat",
+        headers={
+            "Origin": "https://steel-door-chat-bot.vercel.app",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+    assert "access-control-allow-origin" in res.headers
+
+
+# ── TASK 2.5 — EmailStr validation ───────────────────────────────────────────
+
+def test_enquiry_rejects_invalid_email():
+    res = client.post(
+        "/api/enquiry",
+        json={"name": "Bob", "email": "not-an-email"},
+    )
+    assert res.status_code == 422
+
+
+def test_enquiry_accepts_valid_email():
+    res = client.post(
+        "/api/enquiry",
+        json={"name": "Bob Smith", "email": "bob@example.com"},
+    )
+    assert res.status_code == 200
+
+
+# ── TASK 2.6 — Threshold extraction ──────────────────────────────────────────
+
+def test_threshold_weathered_extracted():
+    """Chat message mentioning weathered threshold wires +£80 threshold uplift."""
+    res = client.post(
+        "/api/chat",
+        json={"message": "external door 900x2100 with a weathered threshold"},
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["quote"] is not None
+    # Weathered threshold line should appear in the quote
+    labels = [ln["label"] for ln in body["quote"]["lines"]]
+    assert any("threshold" in lbl.lower() for lbl in labels)

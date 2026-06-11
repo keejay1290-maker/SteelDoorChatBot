@@ -1,9 +1,8 @@
 """FastAPI application: API routes + static web chat UI."""
-from __future__ import annotations
-
 import os
 import secrets
 import uuid
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 try:
@@ -12,10 +11,21 @@ try:
 except ImportError:
     pass
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
+
+try:
+    from slowapi import Limiter, _rate_limit_exceeded_handler
+    from slowapi.errors import RateLimitExceeded
+    from slowapi.util import get_remote_address
+    _limiter = Limiter(key_func=get_remote_address)
+    _rate_limit_available = True
+except ImportError:
+    _limiter = None
+    _rate_limit_available = False
 
 from .catalogue import CATALOGUE
 from .chat import handle_chat
@@ -30,6 +40,10 @@ from .models import (
 from .quoting import calculate_quote
 from .session import build_internal_brief, get_recent_sessions, load_session
 from .store import get_dashboard_stats, get_quote, init_db, save_enquiry, save_quote
+
+# ---------------------------------------------------------------------------
+# Dashboard auth
+# ---------------------------------------------------------------------------
 
 _basic = HTTPBasic()
 
@@ -49,18 +63,49 @@ def _require_dashboard(credentials: HTTPBasicCredentials = Depends(_basic)) -> s
         )
     return credentials.username
 
-app = FastAPI(title="Steel Door Company — Quote Assistant", version="0.4.0")
+
+# ---------------------------------------------------------------------------
+# App factory
+# ---------------------------------------------------------------------------
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    from .seed import seed_demo_data
+    seed_demo_data()
+    yield
+
+
+app = FastAPI(title="Steel Door Company — Quote Assistant", version="0.4.0", lifespan=lifespan)
+
+# CORS — allow the live Vercel URL + localhost by default; override via ALLOWED_ORIGINS
+_allowed_origins = [
+    o.strip()
+    for o in os.environ.get(
+        "ALLOWED_ORIGINS",
+        "https://steel-door-chat-bot.vercel.app,http://localhost:8000",
+    ).split(",")
+    if o.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_allowed_origins,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+)
+
+# Rate limiting
+if _rate_limit_available:
+    app.state.limiter = _limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 STATIC_DIR = Path(__file__).parent / "static"
 (STATIC_DIR / "images").mkdir(parents=True, exist_ok=True)
 
 
-@app.on_event("startup")
-def _startup() -> None:
-    init_db()
-    from .seed import seed_demo_data
-    seed_demo_data()
-
+# ---------------------------------------------------------------------------
+# Routes
+# ---------------------------------------------------------------------------
 
 @app.get("/health")
 def health() -> dict:
@@ -73,7 +118,8 @@ def api_catalogue() -> dict:
 
 
 @app.post("/api/quote", response_model=QuoteResponse)
-def api_quote(req: QuoteRequest) -> QuoteResponse:
+@(_limiter.limit("30/minute") if _rate_limit_available else lambda f: f)
+def api_quote(request: Request, req: QuoteRequest) -> QuoteResponse:
     try:
         quote = calculate_quote(req)
     except KeyError as exc:
@@ -91,7 +137,8 @@ def api_get_quote(reference: str) -> dict:
 
 
 @app.post("/api/chat", response_model=ChatResponse)
-def api_chat(req: ChatRequest) -> ChatResponse:
+@(_limiter.limit("20/minute") if _rate_limit_available else lambda f: f)
+def api_chat(request: Request, req: ChatRequest) -> ChatResponse:
     response = handle_chat(req)
     if response.quote:
         save_quote(response.quote)
@@ -102,6 +149,8 @@ def api_chat(req: ChatRequest) -> ChatResponse:
 def api_enquiry(req: EnquiryRequest) -> EnquiryResponse:
     reference = "ENQ-" + uuid.uuid4().hex[:8].upper()
     enquiry_id = save_enquiry(req, reference)
+    from .email_sender import send_enquiry_email
+    send_enquiry_email(enquiry=req, reference=reference)
     return EnquiryResponse(
         id=enquiry_id,
         reference=reference,
