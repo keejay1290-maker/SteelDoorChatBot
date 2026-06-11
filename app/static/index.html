@@ -41,7 +41,7 @@
     background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.4) 60%, rgba(0,0,0,.75) 100%);
   }
 
-  /* ── FAKE SDC NAVBAR ──────────────────────────────────────── */
+  /* ── NAVBAR ───────────────────────────────────────────────── */
   .sdc-nav {
     position: relative; z-index: 10;
     display: flex; align-items: center; gap: 32px;
@@ -55,15 +55,34 @@
   .sdc-nav-links { display: flex; gap: 28px; }
   .sdc-nav-links a { color: rgba(255,255,255,.9); text-decoration: none; font-size: .85rem; letter-spacing: .04em; transition: color .2s; }
   .sdc-nav-links a:hover { color: var(--gold-light); }
-  .sdc-nav-cta { background: var(--gold); color: #000; border: none; border-radius: 4px; padding: 8px 20px; font-size: .82rem; font-weight: 700; cursor: pointer; letter-spacing: .04em; text-decoration: none; }
+  .sdc-nav-cta { background: var(--gold); color: #000; border: none; border-radius: 4px; padding: 8px 20px; font-size: .82rem; font-weight: 700; cursor: pointer; letter-spacing: .04em; text-decoration: none; transition: background .2s; }
   .sdc-nav-cta:hover { background: var(--gold-light); }
-  @media (max-width: 700px) { .sdc-nav-links { display: none; } .sdc-nav { padding: 14px 20px; } }
+  /* hamburger */
+  .sdc-nav-hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; }
+  .sdc-nav-hamburger span { display: block; width: 22px; height: 2px; background: #fff; border-radius: 2px; transition: all .2s; }
+  @media (max-width: 700px) {
+    .sdc-nav { padding: 14px 16px; gap: 12px; }
+    .sdc-nav-links { display: none; }
+    .sdc-nav-hamburger { display: flex; }
+  }
+  /* mobile nav drawer */
+  .sdc-mobile-nav {
+    display: none; position: relative; z-index: 9;
+    background: rgba(0,0,0,.92); backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    padding: 12px 16px 16px;
+    flex-direction: column; gap: 2px;
+  }
+  .sdc-mobile-nav.open { display: flex; }
+  .sdc-mobile-nav a { color: rgba(255,255,255,.9); text-decoration: none; font-size: .9rem; padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,.06); }
+  .sdc-mobile-nav a:last-child { border-bottom: none; }
+  .sdc-mobile-nav a:hover { color: var(--gold-light); }
 
-  /* ── HERO TEXT ─────────────────────────────────────────────── */
+  /* ── HERO ─────────────────────────────────────────────────── */
   .sdc-hero {
     position: relative; z-index: 10;
     padding: 80px 48px 0;
-    max-width: 640px;
+    max-width: 660px;
   }
   .sdc-hero h1 {
     font-size: clamp(1.6rem, 4vw, 2.8rem); font-weight: 900;
@@ -72,11 +91,141 @@
   }
   .sdc-hero p { color: rgba(255,255,255,.9); font-size: .95rem; margin-top: 14px; line-height: 1.6; max-width: 420px; }
   .sdc-hero-btns { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
-  .btn-hero-gold { background: var(--gold); color: #000; border: none; border-radius: 5px; padding: 12px 28px; font-size: .9rem; font-weight: 700; cursor: pointer; letter-spacing: .04em; }
-  .btn-hero-outline { background: none; border: 2px solid rgba(255,255,255,.4); color: #fff; border-radius: 5px; padding: 12px 28px; font-size: .9rem; cursor: pointer; }
-  @media (max-width: 700px) { .sdc-hero { padding: 40px 20px 0; } }
+  .btn-hero-gold { background: var(--gold); color: #000; border: none; border-radius: 5px; padding: 12px 28px; font-size: .9rem; font-weight: 700; cursor: pointer; letter-spacing: .04em; transition: background .2s; }
+  .btn-hero-gold:hover { background: var(--gold-light); }
+  .btn-hero-outline { background: none; border: 2px solid rgba(255,255,255,.5); color: #fff; border-radius: 5px; padding: 12px 28px; font-size: .9rem; cursor: pointer; transition: border-color .2s, background .2s; }
+  .btn-hero-outline:hover { border-color: #fff; background: rgba(255,255,255,.08); }
+  @media (max-width: 700px) { .sdc-hero { padding: 36px 16px 0; max-width: 100%; } }
 
-  /* ── CHAT LAUNCHER (floating bubble) ─────────────────────── */
+  /* ── TRUST STRIP ─────────────────────────────────────────── */
+  .trust-strip {
+    display: flex; flex-wrap: wrap; gap: 8px 20px;
+    margin-top: 24px;
+    padding: 14px 18px;
+    background: rgba(0,0,0,.5);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 8px;
+    max-width: 580px;
+  }
+  .trust-item {
+    display: flex; align-items: center; gap: 7px;
+    font-size: .76rem; font-weight: 600; color: #ddd;
+  }
+  .trust-item::before { content: '✓'; color: var(--gold); font-weight: 900; font-size: .8rem; flex-shrink: 0; }
+  @media (max-width: 700px) {
+    .trust-strip { max-width: 100%; gap: 7px 16px; padding: 12px 14px; }
+    .trust-item { font-size: .72rem; }
+  }
+
+  /* ── PRODUCT TILES ────────────────────────────────────────── */
+  .product-section {
+    position: relative; z-index: 10;
+    padding: 48px 48px 56px;
+  }
+  .product-section h2 {
+    font-size: .72rem; font-weight: 700; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--gold); margin-bottom: 16px;
+  }
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    max-width: 1000px;
+  }
+  .product-tile {
+    position: relative; border-radius: 10px; overflow: hidden;
+    aspect-ratio: 3/4; cursor: pointer;
+    background: #1a1a1a;
+    border: 1px solid rgba(255,255,255,.1);
+    transition: transform .2s, border-color .2s, box-shadow .2s;
+  }
+  .product-tile:hover { transform: translateY(-4px); border-color: var(--gold); box-shadow: 0 8px 32px rgba(0,0,0,.5); }
+  .product-tile img {
+    width: 100%; height: 100%; object-fit: cover;
+    display: block; transition: transform .35s;
+  }
+  .product-tile:hover img { transform: scale(1.06); }
+  .product-tile-label {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 32px 12px 12px;
+    background: linear-gradient(to top, rgba(0,0,0,.88) 0%, transparent 100%);
+    font-size: .78rem; font-weight: 700; color: #fff; letter-spacing: .02em;
+  }
+  @media (max-width: 900px) {
+    .product-grid { grid-template-columns: repeat(3, 1fr); }
+    .product-section { padding: 36px 20px 44px; }
+  }
+  @media (max-width: 560px) {
+    .product-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .product-section { padding: 28px 16px 36px; }
+    .product-section h2 { font-size: .68rem; }
+  }
+
+  /* ── GALLERY OVERLAY (grid) ───────────────────────────────── */
+  .gallery-overlay {
+    position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,0,0,.94);
+    display: flex; flex-direction: column;
+    opacity: 1; transition: opacity .2s;
+  }
+  .gallery-overlay.hidden { opacity: 0; pointer-events: none; }
+  .gallery-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; flex-shrink: 0;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  .gallery-header h3 { font-size: .85rem; color: var(--gold); letter-spacing: .1em; text-transform: uppercase; }
+  .gallery-close {
+    background: none; border: 1px solid rgba(255,255,255,.2); color: #fff;
+    border-radius: 6px; padding: 6px 14px; font-size: .8rem; cursor: pointer; transition: border-color .2s;
+  }
+  .gallery-close:hover { border-color: var(--gold); color: var(--gold); }
+  .gallery-grid {
+    flex: 1; overflow-y: auto;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 8px; padding: 12px 16px 20px;
+  }
+  .gallery-grid img {
+    width: 100%; aspect-ratio: 4/3; object-fit: cover;
+    border-radius: 8px; cursor: pointer;
+    transition: transform .2s, opacity .2s;
+    border: 1px solid rgba(255,255,255,.06);
+    display: block;
+  }
+  .gallery-grid img:hover { transform: scale(1.02); opacity: .85; }
+  @media (max-width: 560px) {
+    .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; padding: 8px; }
+  }
+
+  /* ── GALLERY VIEWER (full-screen single image) ─────────────── */
+  .gallery-viewer {
+    position: fixed; inset: 0; z-index: 400;
+    background: rgba(0,0,0,.97);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .gallery-viewer.hidden { display: none; }
+  .gallery-viewer img { max-width: 92vw; max-height: 86vh; object-fit: contain; border-radius: 4px; }
+  .gallery-viewer-close {
+    position: absolute; top: 14px; right: 18px;
+    background: none; border: none; color: rgba(255,255,255,.7); font-size: 1.8rem; cursor: pointer; line-height: 1;
+  }
+  .gallery-viewer-close:hover { color: #fff; }
+  .gallery-nav-btn {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    background: rgba(255,255,255,.1); border: none; color: #fff;
+    font-size: 1.3rem; width: 46px; height: 46px; border-radius: 50%;
+    cursor: pointer; transition: background .2s; display: flex; align-items: center; justify-content: center;
+  }
+  .gallery-nav-btn:hover { background: rgba(255,255,255,.22); }
+  .gallery-nav-prev { left: 16px; }
+  .gallery-nav-next { right: 16px; }
+  @media (max-width: 560px) {
+    .gallery-nav-btn { display: none; }
+    .gallery-viewer img { max-width: 98vw; max-height: 80vh; }
+  }
+
+  /* ── CHAT LAUNCHER ────────────────────────────────────────── */
   .chat-launcher {
     position: fixed; bottom: 28px; right: 28px; z-index: 100;
     width: 62px; height: 62px; border-radius: 50%;
@@ -193,7 +342,7 @@
   .qc-lines li.total { color: var(--text); font-weight: 700; font-size: .88rem; border-top: 1px solid var(--border); margin-top: 5px; padding-top: 7px; }
   .qc-lines li.discount { color: var(--green); }
   .qc-lead { margin-top: 8px; font-size: .72rem; color: var(--muted); }
-  .qc-cta { margin-top: 10px; display: flex; gap: 8px; }
+  .qc-cta { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
   .btn-gold { background: var(--gold); color: #000; border: none; border-radius: 5px; padding: 7px 13px; font-size: .76rem; font-weight: 600; cursor: pointer; }
   .btn-gold:hover { background: var(--gold-light); }
   .btn-outline { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 5px; padding: 7px 13px; font-size: .76rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
@@ -203,11 +352,12 @@
   .modal-backdrop {
     position: fixed; inset: 0; z-index: 200;
     background: rgba(0,0,0,.75); display: flex; align-items: center; justify-content: center;
+    padding: 16px;
   }
   .modal-backdrop.hidden { display: none; }
   .modal {
     background: #141414; border: 1px solid var(--border); border-radius: 12px;
-    padding: 24px; width: min(480px, 92vw); max-height: 90vh; overflow-y: auto;
+    padding: 24px; width: min(480px, 100%); max-height: 90vh; overflow-y: auto;
   }
   .modal h2 { font-size: 1rem; color: var(--gold); margin-bottom: 4px; }
   .modal .modal-sub { font-size: .78rem; color: var(--muted); margin-bottom: 18px; }
@@ -223,6 +373,10 @@
   .form-group textarea { resize: vertical; min-height: 70px; }
   .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
   .modal-error { color: var(--red); font-size: .78rem; margin-top: 8px; display: none; }
+  @media (max-width: 480px) {
+    .form-row { grid-template-columns: 1fr; }
+    .modal { padding: 20px 16px; }
+  }
 
   /* ── CONFIRMATION PANEL ───────────────────────────────────── */
   .confirm-panel {
@@ -258,7 +412,7 @@
   .send-btn:hover { background: var(--gold-light); }
   .send-btn:disabled { background: #2a2a2a; color: var(--muted); cursor: not-allowed; }
 
-  /* ── BRIEF PANEL (inside chat window) ────────────────────── */
+  /* ── BRIEF PANEL ─────────────────────────────────────────── */
   .brief-panel {
     position: absolute; inset: 0; z-index: 20;
     background: var(--card); display: flex; flex-direction: column;
@@ -291,6 +445,7 @@
     transition: all .2s;
   }
   .dash-link:hover { color: var(--gold); border-color: var(--gold); }
+  @media (max-width: 700px) { .dash-link { display: none; } }
 </style>
 </head>
 <body>
@@ -298,35 +453,82 @@
 <!-- BACKDROP -->
 <div class="sdc-backdrop"></div>
 
-<!-- FAKE SDC NAV -->
+<!-- NAVBAR -->
 <nav class="sdc-nav">
   <div class="sdc-logo-wrap">
     <img class="sdc-logo-img" src="https://steeldoorcompany.co.uk/cdn/shop/files/logo-black.png?v=1709791739" alt="Steel Door Company" onerror="this.replaceWith(document.createTextNode('STEEL DOOR CO.'))"/>
   </div>
   <div class="sdc-nav-links">
-    <a href="#">Products</a>
-    <a href="#">Gallery</a>
-    <a href="#">Technical Specs</a>
-    <a href="#">Case Studies</a>
-    <a href="#">About</a>
+    <a href="https://steeldoorcompany.co.uk/collections/all" target="_blank" rel="noopener">Products</a>
+    <a href="#" onclick="openGallery();return false;">Gallery</a>
+    <a href="https://steeldoorcompany.co.uk/pages/technical" target="_blank" rel="noopener">Technical</a>
+    <a href="https://steeldoorcompany.co.uk/pages/about" target="_blank" rel="noopener">About</a>
+    <a href="https://steeldoorcompany.co.uk/pages/case-studies" target="_blank" rel="noopener">Case Studies</a>
   </div>
-  <a class="sdc-nav-cta" href="#">GET A QUOTE</a>
+  <a class="sdc-nav-cta" href="#" onclick="openChat();return false;">GET A QUOTE</a>
+  <button class="sdc-nav-hamburger" onclick="toggleMobileNav()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
 
-<!-- HERO TEXT -->
+<!-- MOBILE NAV DRAWER -->
+<div class="sdc-mobile-nav" id="mobile-nav">
+  <a href="https://steeldoorcompany.co.uk/collections/all" target="_blank" rel="noopener">Products</a>
+  <a href="#" onclick="openGallery();closeMobileNav();return false;">Gallery</a>
+  <a href="https://steeldoorcompany.co.uk/pages/technical" target="_blank" rel="noopener">Technical</a>
+  <a href="https://steeldoorcompany.co.uk/pages/about" target="_blank" rel="noopener">About</a>
+  <a href="https://steeldoorcompany.co.uk/pages/case-studies" target="_blank" rel="noopener">Case Studies</a>
+  <a href="#" onclick="openChat();closeMobileNav();return false;" style="color:var(--gold);font-weight:700;">Get a Quote</a>
+</div>
+
+<!-- HERO -->
 <div class="sdc-hero">
   <h1>The UK's Leading<br>Installer of Steel Doors</h1>
   <p>We supply &amp; fit luxury bespoke steel doors across the UK. From single internal doors to large commercial installations.</p>
   <div class="sdc-hero-btns">
     <button class="btn-hero-gold" onclick="openChat()">Chat with AI Consultant</button>
-    <button class="btn-hero-outline">View Gallery</button>
+    <button class="btn-hero-outline" onclick="openGallery()">View Gallery</button>
+  </div>
+  <div class="trust-strip">
+    <span class="trust-item">2,000+ Installations Nationwide</span>
+    <span class="trust-item">Same Day Quote</span>
+    <span class="trust-item">Slimmest Steel Doors</span>
+    <span class="trust-item">24 Month Warranty</span>
+    <span class="trust-item">Bespoke Made To Measure</span>
+  </div>
+</div>
+
+<!-- PRODUCT CATEGORY TILES -->
+<div class="product-section">
+  <h2>Browse Our Range</h2>
+  <div class="product-grid">
+    <div class="product-tile" onclick="openChatWithType('single steel door')">
+      <img src="https://steeldoorcompany.co.uk/cdn/shop/files/single_door.png?v=1770897895&width=480" alt="Single Doors" loading="lazy" onerror="this.style.background='#1a1a1a';this.style.display='none'"/>
+      <div class="product-tile-label">Single Doors</div>
+    </div>
+    <div class="product-tile" onclick="openChatWithType('double steel door')">
+      <img src="https://steeldoorcompany.co.uk/cdn/shop/files/single_door.png?v=1770897895&width=480" alt="Double Doors" loading="lazy" onerror="this.style.background='#1a1a1a';this.style.display='none'"/>
+      <div class="product-tile-label">Double Doors</div>
+    </div>
+    <div class="product-tile" onclick="openChatWithType('fire rated steel door')">
+      <img src="https://steeldoorcompany.co.uk/cdn/shop/files/single_door.png?v=1770897895&width=480" alt="Fire Rated" loading="lazy" onerror="this.style.background='#1a1a1a';this.style.display='none'"/>
+      <div class="product-tile-label">Fire Rated</div>
+    </div>
+    <div class="product-tile" onclick="openChatWithType('external steel door')">
+      <img src="https://steeldoorcompany.co.uk/cdn/shop/files/63D5CB37-D804-4E4A-8879-B48B01A8AE39.png?v=1771343755&width=480" alt="External" loading="lazy" onerror="this.style.background='#1a1a1a';this.style.display='none'"/>
+      <div class="product-tile-label">External</div>
+    </div>
+    <div class="product-tile" onclick="openChatWithType('wine room steel door')">
+      <img src="https://steeldoorcompany.co.uk/cdn/shop/files/IMG_9077.jpg?v=1743781769&width=480" alt="Wine Room" loading="lazy" onerror="this.style.background='#1a1a1a';this.style.display='none'"/>
+      <div class="product-tile-label">Wine Room</div>
+    </div>
   </div>
 </div>
 
 <!-- DASHBOARD LINK -->
 <a href="/dashboard" class="dash-link">Staff Dashboard</a>
 
-<!-- CHAT LAUNCHER (floating bubble) -->
+<!-- CHAT LAUNCHER -->
 <button class="chat-launcher" id="chat-launcher" onclick="openChat()" title="Chat with our AI consultant">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -384,13 +586,86 @@
   </div>
 </div>
 
+<!-- GALLERY OVERLAY -->
+<div class="gallery-overlay hidden" id="gallery-overlay">
+  <div class="gallery-header">
+    <h3>Gallery</h3>
+    <button class="gallery-close" onclick="closeGallery()">Close ✕</button>
+  </div>
+  <div class="gallery-grid">
+    <img src="https://steeldoorcompany.co.uk/cdn/shop/files/IMG_8938.jpg?v=1750852840" alt="Steel door installation" onclick="viewImage(0)" loading="lazy"/>
+    <img src="https://steeldoorcompany.co.uk/cdn/shop/files/IMG_0311_1.jpg?v=1770113145" alt="Steel door project" onclick="viewImage(1)" loading="lazy"/>
+    <img src="https://steeldoorcompany.co.uk/cdn/shop/files/GL.png?v=1770804345" alt="Glass steel door" onclick="viewImage(2)" loading="lazy"/>
+    <img src="https://steeldoorcompany.co.uk/cdn/shop/files/63D5CB37-D804-4E4A-8879-B48B01A8AE39.png?v=1771343755" alt="External steel door" onclick="viewImage(3)" loading="lazy"/>
+    <img src="https://steeldoorcompany.co.uk/cdn/shop/files/IMG_9077.jpg?v=1743781769" alt="Wine room door" onclick="viewImage(4)" loading="lazy"/>
+  </div>
+</div>
+
+<!-- GALLERY FULL-SCREEN VIEWER -->
+<div class="gallery-viewer hidden" id="gallery-viewer">
+  <button class="gallery-viewer-close" onclick="closeViewer()">&#x2715;</button>
+  <button class="gallery-nav-btn gallery-nav-prev" onclick="stepViewer(-1)">&#8249;</button>
+  <img id="gallery-viewer-img" src="" alt=""/>
+  <button class="gallery-nav-btn gallery-nav-next" onclick="stepViewer(1)">&#8250;</button>
+</div>
+
 <script>
 const API = '';
 let sessionId = null;
 let history = [];
 let briefOpen = false;
 
-// ── Window open/close ─────────────────────────────────────────
+const GALLERY_IMAGES = [
+  'https://steeldoorcompany.co.uk/cdn/shop/files/IMG_8938.jpg?v=1750852840',
+  'https://steeldoorcompany.co.uk/cdn/shop/files/IMG_0311_1.jpg?v=1770113145',
+  'https://steeldoorcompany.co.uk/cdn/shop/files/GL.png?v=1770804345',
+  'https://steeldoorcompany.co.uk/cdn/shop/files/63D5CB37-D804-4E4A-8879-B48B01A8AE39.png?v=1771343755',
+  'https://steeldoorcompany.co.uk/cdn/shop/files/IMG_9077.jpg?v=1743781769',
+];
+let viewerIndex = 0;
+
+// ── Gallery ───────────────────────────────────────────────
+function openGallery() {
+  document.getElementById('gallery-overlay').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+function closeGallery() {
+  document.getElementById('gallery-overlay').classList.add('hidden');
+  document.getElementById('gallery-viewer').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+function viewImage(idx) {
+  viewerIndex = idx;
+  document.getElementById('gallery-viewer-img').src = GALLERY_IMAGES[idx];
+  document.getElementById('gallery-viewer').classList.remove('hidden');
+}
+function closeViewer() {
+  document.getElementById('gallery-viewer').classList.add('hidden');
+}
+function stepViewer(dir) {
+  viewerIndex = (viewerIndex + dir + GALLERY_IMAGES.length) % GALLERY_IMAGES.length;
+  document.getElementById('gallery-viewer-img').src = GALLERY_IMAGES[viewerIndex];
+}
+// ESC closes viewer, then gallery
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (!document.getElementById('gallery-viewer').classList.contains('hidden')) { closeViewer(); return; }
+    if (!document.getElementById('gallery-overlay').classList.contains('hidden')) { closeGallery(); return; }
+    closeChat();
+  }
+  if (e.key === 'ArrowRight' && !document.getElementById('gallery-viewer').classList.contains('hidden')) stepViewer(1);
+  if (e.key === 'ArrowLeft'  && !document.getElementById('gallery-viewer').classList.contains('hidden')) stepViewer(-1);
+});
+
+// ── Mobile nav ────────────────────────────────────────────
+function toggleMobileNav() {
+  document.getElementById('mobile-nav').classList.toggle('open');
+}
+function closeMobileNav() {
+  document.getElementById('mobile-nav').classList.remove('open');
+}
+
+// ── Chat open/close ───────────────────────────────────────
 function openChat() {
   document.getElementById('chat-window').classList.remove('hidden');
   document.getElementById('chat-launcher').style.display = 'none';
@@ -401,14 +676,22 @@ function closeChat() {
   document.getElementById('chat-launcher').style.display = '';
 }
 
-// ── Brief panel toggle ────────────────────────────────────────
+// ── Open chat pre-filled with door type (product tiles) ───
+function openChatWithType(doorType) {
+  openChat();
+  const inp = document.getElementById('user-input');
+  inp.value = "I'm interested in a " + doorType;
+  inp.focus();
+}
+
+// ── Brief panel toggle ────────────────────────────────────
 function toggleBrief() {
   briefOpen = !briefOpen;
   document.getElementById('brief-panel').classList.toggle('hidden', !briefOpen);
   document.getElementById('brief-toggle-btn').classList.toggle('active', briefOpen);
 }
 
-// ── Readiness + session update ────────────────────────────────
+// ── Readiness + session update ────────────────────────────
 const CL_FIELDS = [
   { key: 'has_door_spec',  label: 'Door type' },
   { key: 'has_dimensions', label: 'Size' },
@@ -439,7 +722,6 @@ function updateReadiness(session) {
     rb.style.display = '';
   }
 
-  // Brief panel
   if (session.internal_brief) {
     document.getElementById('brief-body').innerHTML = `<pre class="brief-pre">${esc(session.internal_brief)}</pre>`;
   }
@@ -449,14 +731,13 @@ function updateReadiness(session) {
     return `<div class="bp-item"><span class="bp-key">${f.label}</span><span class="bp-val ${done ? 'ok' : 'missing'}">${done ? '✓' : '—'}</span></div>`;
   }).join('');
 
-  // Checklist strip
   document.getElementById('cl-row').innerHTML = CL_FIELDS.map(f => {
     const done = session && session[f.key];
     return `<span class="cl-item ${done ? 'done' : ''}"><span class="dot"></span>${f.label}</span>`;
   }).join('');
 }
 
-// ── Utils ─────────────────────────────────────────────────────
+// ── Utils ─────────────────────────────────────────────────
 function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function md(text) {
   return text
@@ -465,7 +746,7 @@ function md(text) {
     .replace(/\n/g, '<br>');
 }
 
-// ── Message rendering ─────────────────────────────────────────
+// ── Message rendering ─────────────────────────────────────
 function addMsg(role, text, quoteData) {
   const el = document.createElement('div');
   el.className = 'msg ' + role;
@@ -506,9 +787,8 @@ function buildQuoteCard(q) {
   return d;
 }
 
-// ── Survey modal (UX-001) ─────────────────────────────────────
+// ── Survey modal ──────────────────────────────────────────
 async function bookSurvey() {
-  // Pre-fill from current session if available
   let prefill = {};
   if (sessionId) {
     try {
@@ -557,7 +837,6 @@ async function submitSurveyForm(e) {
     btn.textContent = 'Send Request';
   }
 }
-// ── Enquiry confirmation panel (UX-002) ───────────────────────
 function showConfirmation(ref, name) {
   const panel = document.createElement('div');
   panel.className = 'confirm-panel';
@@ -575,7 +854,7 @@ function adjust() {
   document.getElementById('user-input').focus();
 }
 
-// ── Typing indicator ──────────────────────────────────────────
+// ── Typing indicator ──────────────────────────────────────
 function showTyping() {
   const el = document.createElement('div');
   el.className = 'msg bot'; el.id = 'typing';
@@ -585,7 +864,7 @@ function showTyping() {
 }
 function removeTyping() { const el = document.getElementById('typing'); if (el) el.remove(); }
 
-// ── Send ──────────────────────────────────────────────────────
+// ── Send ──────────────────────────────────────────────────
 async function send() {
   const inp = document.getElementById('user-input');
   const text = inp.value.trim();
@@ -624,13 +903,8 @@ document.getElementById('user-input').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
 });
 
-// ── Boot ──────────────────────────────────────────────────────
-updateReadiness(null); // init checklist
-
-// Welcome message shown when chat first opens
-document.getElementById('chat-launcher').addEventListener('click', function onFirst() {
-  // Remove listener after first click (already added above)
-}, { once: true });
+// ── Boot ──────────────────────────────────────────────────
+updateReadiness(null);
 
 addMsg('bot',
   "Hi, welcome to **Steel Door Company** — the UK's leading installer of bespoke steel doors.\n\n" +
@@ -640,7 +914,7 @@ addMsg('bot',
 );
 </script>
 
-<!-- ── Survey modal (UX-001) ──────────────────────────────────── -->
+<!-- SURVEY MODAL -->
 <div id="survey-modal" class="modal-backdrop hidden" onclick="if(event.target===this)closeSurveyModal()">
   <div class="modal">
     <h2>Book Your Free Site Survey</h2>
