@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Steel Door Company — AI Consultant</title>
+<style>
+  :root {
+    --gold: #b8922e;
+    --gold-light: #d4a94a;
+    --dark: #0d0d0d;
+    --card: #141414;
+    --panel: #1a1a1a;
+    --border: #282828;
+    --text: #e8e8e8;
+    --muted: #777;
+    --green: #22c55e;
+    --blue: #60a5fa;
+    --orange: #f59e0b;
+    --red: #f87171;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--dark); color: var(--text); font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+  header {
+    background: #000; border-bottom: 1px solid var(--border);
+    padding: 12px 20px; display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+  }
+  .logo { width: 34px; height: 34px; background: var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; color: #000; flex-shrink: 0; }
+  .header-info h1 { font-size: 1rem; color: var(--text); }
+  .header-info p { font-size: .75rem; color: var(--muted); }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; margin-left: auto; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+  .dash-link { color: var(--muted); font-size: .75rem; text-decoration: none; padding: 4px 10px; border: 1px solid var(--border); border-radius: 4px; }
+  .dash-link:hover { color: var(--gold); border-color: var(--gold); }
+
+  .body { display: flex; flex: 1; overflow: hidden; }
+
+  .sidebar {
+    width: 240px; background: var(--card); border-right: 1px solid var(--border);
+    overflow-y: auto; flex-shrink: 0; padding: 16px;
+  }
+  .sidebar h3 { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 12px; }
+  .product-btn {
+    display: flex; align-items: center; gap: 10px; width: 100%; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin-bottom: 8px;
+    cursor: pointer; text-align: left; transition: border-color .2s;
+  }
+  .product-btn:hover { border-color: var(--gold); }
+  .product-btn img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; background: #222; }
+  .product-btn .prod-name { font-size: .78rem; color: var(--text); line-height: 1.3; }
+  .product-btn .prod-price { font-size: .7rem; color: var(--gold); }
+
+  .chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  .readiness-bar-wrap {
+    padding: 8px 16px; background: var(--card); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+  }
+  .readiness-label { font-size: .72rem; color: var(--muted); white-space: nowrap; }
+  .readiness-track { flex: 1; height: 6px; background: #2a2a2a; border-radius: 3px; overflow: hidden; }
+  .readiness-fill { height: 100%; background: var(--gold); border-radius: 3px; transition: width .6s ease; }
+  .readiness-score { font-size: .72rem; color: var(--gold); white-space: nowrap; min-width: 42px; text-align: right; }
+  .stage-badge { font-size: .66rem; padding: 2px 7px; border-radius: 8px; background: #2a2a2a; color: var(--muted); white-space: nowrap; }
+  .routing-badge { font-size: .66rem; padding: 2px 7px; border-radius: 8px; white-space: nowrap; display: none; }
+  .routing-sales { background: rgba(96,165,250,.15); color: var(--blue); }
+  .routing-survey { background: rgba(34,197,94,.15); color: var(--green); }
+  .routing-installation { background: rgba(245,158,11,.15); color: var(--orange); }
+
+  .messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .msg { display: flex; gap: 10px; max-width: 90%; }
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+  .msg-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .7rem; font-weight: 700; flex-shrink: 0; }
+  .msg.bot .msg-avatar { background: var(--gold); color: #000; }
+  .msg.user .msg-avatar { background: #2a2a2a; color: var(--muted); }
+  .msg-bubble {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 14px; font-size: .85rem; line-height: 1.55;
+  }
+  .msg.user .msg-bubble { background: #1c2030; border-color: #2a3560; }
+  .msg-bubble strong { color: var(--gold); }
+  .typing { display: flex; gap: 4px; align-items: center; padding: 12px 14px; }
+  .typing span { width: 6px; height: 6px; background: var(--muted); border-radius: 50%; animation: bounce 1.2s infinite; }
+  .typing span:nth-child(2) { animation-delay: .2s; }
+  .typing span:nth-child(3) { animation-delay: .4s; }
+  @keyframes bounce { 0%,80%,100% { transform: translateY(0); } 40% { transform: translateY(-6px); } }
+
+  .quote-card {
+    border: 1px solid var(--gold); background: #0f0c05; border-radius: 10px;
+    padding: 16px; margin-top: 10px; font-size: .82rem;
+  }
+  .quote-card .qc-header { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
+  .quote-card img { width: 72px; height: 72px; object-fit: cover; border-radius: 6px; background: #222; }
+  .quote-card .qc-title { font-size: .9rem; font-weight: 700; color: var(--text); }
+  .quote-card .qc-ref { font-size: .7rem; color: var(--muted); margin-top: 2px; font-family: monospace; }
+  .qc-lines { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--border); padding-top: 10px; }
+  .qc-lines li { display: flex; justify-content: space-between; padding: 3px 0; color: var(--muted); font-size: .8rem; }
+  .qc-lines li.total { color: var(--text); font-weight: 700; font-size: .9rem; border-top: 1px solid var(--border); margin-top: 6px; padding-top: 8px; }
+  .qc-lines li.discount { color: var(--green); }
+  .qc-lead { margin-top: 10px; font-size: .75rem; color: var(--muted); }
+  .qc-cta { margin-top: 10px; display: flex; gap: 8px; }
+  .btn-gold { background: var(--gold); color: #000; border: none; border-radius: 5px; padding: 7px 14px; font-size: .78rem; font-weight: 600; cursor: pointer; }
+  .btn-gold:hover { background: var(--gold-light); }
+  .btn-outline { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 5px; padding: 7px 14px; font-size: .78rem; cursor: pointer; }
+  .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+
+  .checklist { padding: 0 16px 6px; flex-shrink: 0; }
+  .cl-row { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 0; border-top: 1px solid var(--border); }
+  .cl-item { display: flex; align-items: center; gap: 4px; font-size: .7rem; color: var(--muted); }
+  .cl-item.done { color: var(--green); }
+  .cl-item .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+  .input-row {
+    padding: 12px 16px; border-top: 1px solid var(--border); background: var(--card);
+    display: flex; gap: 10px; flex-shrink: 0;
+  }
+  .input-row input {
+    flex: 1; background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: 10px 14px; font-size: .9rem; outline: none;
+  }
+  .input-row input:focus { border-color: var(--gold); }
+  .input-row input::placeholder { color: var(--muted); }
+  .send-btn { background: var(--gold); border: none; color: #000; border-radius: 8px; padding: 0 18px; font-size: 1.1rem; cursor: pointer; font-weight: 700; flex-shrink: 0; }
+  .send-btn:hover { background: var(--gold-light); }
+  .send-btn:disabled { background: #2a2a2a; color: var(--muted); cursor: not-allowed; }
+
+  .right-panel {
+    width: 280px; background: var(--card); border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .rp-header {
+    padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: .75rem;
+    color: var(--muted); text-transform: uppercase; letter-spacing: .08em; display: flex; align-items: center; gap: 8px;
+  }
+  .rp-header .score-chip { margin-left: auto; background: #2a2a2a; color: var(--gold); font-size: .7rem; padding: 2px 8px; border-radius: 10px; }
+  .brief-content { flex: 1; overflow-y: auto; padding: 14px; }
+  .brief-empty { color: var(--muted); font-size: .8rem; text-align: center; padding: 40px 20px; line-height: 1.6; }
+  .brief-pre { font-family: monospace; font-size: .68rem; color: #aaa; white-space: pre-wrap; line-height: 1.5; }
+  .brief-progress { padding: 14px; border-top: 1px solid var(--border); }
+  .bp-label { font-size: .7rem; color: var(--muted); margin-bottom: 8px; }
+  .bp-item { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: .75rem; }
+  .bp-item:last-child { border-bottom: none; }
+  .bp-key { color: var(--muted); }
+  .bp-val { color: var(--green); }
+  .bp-val.missing { color: #3a3a3a; }
+
+  @media (max-width: 900px) { .sidebar, .right-panel { display: none; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">SD</div>
+  <div class="header-info">
+    <h1>Steel Door Company</h1>
+    <p>AI Sales Consultant — instant quotes, 24/7</p>
+  </div>
+  <div class="status-dot" title="AI Online"></div>
+  <a href="/dashboard" class="dash-link">Dashboard</a>
+</header>
+<div class="body">
+  <div class="sidebar">
+    <h3>Products</h3>
+    <div id="product-grid">Loading...</div>
+  </div>
+
+  <div class="chat-area">
+    <div class="readiness-bar-wrap">
+      <span class="readiness-label">Quote Readiness</span>
+      <div class="readiness-track"><div class="readiness-fill" id="readiness-fill" style="width:0%"></div></div>
+      <span class="readiness-score" id="readiness-score">0%</span>
+      <span class="stage-badge" id="stage-badge">Stage 1: Scoping</span>
+      <span class="routing-badge" id="routing-badge"></span>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="checklist"><div class="cl-row" id="cl-row"></div></div>
+    <div class="input-row">
+      <input id="user-input" type="text" placeholder="Describe your project or ask a question..." autocomplete="off"/>
+      <button class="send-btn" id="send-btn" title="Send">&#9658;</button>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="rp-header">Internal Brief <span class="score-chip" id="rp-score">0/100</span></div>
+    <div class="brief-content" id="brief-content">
+      <p class="brief-empty">Auto-generates here when score &ge; 60 + email collected.<br><br><strong style="color:var(--gold)">Score shown in progress bar.</strong></p>
+    </div>
+    <div class="brief-progress" id="brief-progress">
+      <div class="bp-label">FIELD COLLECTION</div>
+      <div id="bp-fields"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let sessionId = null;
+let history = [];
+
+async function loadCatalogue() {
+  try {
+    const cat = await fetch(`${API}/api/catalogue`).then(r => r.json());
+    const grid = document.getElementById('product-grid');
+    grid.innerHTML = '';
+    const products = [
+      { key: 'single',         label: 'Single Door',    img: 'single_door.jpg',        prompt: 'I need a quote for a single steel internal door' },
+      { key: 'double',         label: 'Double Doors',   img: 'double_door.jpg',         prompt: 'I need a quote for double steel doors' },
+      { key: 'fire_rated',     label: 'Fire Rated',     img: 'fire_rated_door.jpg',     prompt: 'I need fire rated steel doors FD30' },
+      { key: 'sliding',        label: 'Sliding Door',   img: 'sliding_door.jpg',        prompt: 'I am interested in a sliding steel door' },
+      { key: 'concertina',     label: 'Concertina',     img: 'concertina_door.jpg',     prompt: 'Tell me about concertina folding steel doors' },
+      { key: 'external_patio', label: 'External Patio', img: 'external_patio_door.jpg', prompt: 'I want external steel patio doors' },
+      { key: 'wine_room',      label: 'Wine Room',      img: 'wine_room_door.jpg',      prompt: 'I need a door for a wine room or cellar' },
+    ];
+    products.forEach(p => {
+      const info = cat[p.key] || {};
+      const price = info.base_price ? `from £${Number(info.base_price).toLocaleString()}` : '';
+      const btn = document.createElement('button');
+      btn.className = 'product-btn';
+      btn.innerHTML = `
+        <img src="/static/images/${p.img}" alt="${p.label}" onerror="this.style.background='#333'"/>
+        <div><div class="prod-name">${p.label}</div><div class="prod-price">${price}</div></div>
+      `;
+      btn.onclick = () => { document.getElementById('user-input').value = p.prompt; document.getElementById('user-input').focus(); };
+      grid.appendChild(btn);
+    });
+  } catch(e) {
+    document.getElementById('product-grid').textContent = '';
+  }
+}
+
+const CL_FIELDS = [
+  { key: 'has_door_spec',  label: 'Door type' },
+  { key: 'has_dimensions', label: 'Size' },
+  { key: 'has_quantity',   label: 'Qty' },
+  { key: 'has_glass',      label: 'Glass' },
+  { key: 'has_name',       label: 'Name' },
+  { key: 'has_email',      label: 'Email' },
+  { key: 'has_phone',      label: 'Phone' },
+  { key: 'has_postcode',   label: 'Postcode' },
+];
+function updateChecklist(session) {
+  document.getElementById('cl-row').innerHTML = CL_FIELDS.map(f => {
+    const done = session && session[f.key];
+    return `<span class="cl-item ${done?'done':''}"><span class="dot"></span>${f.label}</span>`;
+  }).join('');
+}
+
+const STAGE_LABELS = { 1:'Stage 1: Scoping', 2:'Stage 2: Specification', 3:'Stage 3: Contact', 4:'Stage 4: Complete' };
+
+function updateReadiness(session) {
+  if (!session) return;
+  const pct = Math.min(session.readiness_score, 100);
+  document.getElementById('readiness-fill').style.width = pct + '%';
+  document.getElementById('readiness-score').textContent = pct + '%';
+  document.getElementById('stage-badge').textContent = STAGE_LABELS[session.stage] || 'Stage '+session.stage;
+  document.getElementById('rp-score').textContent = pct+'/100';
+
+  const rb = document.getElementById('routing-badge');
+  const rmap = { sales:'routing-sales', survey:'routing-survey', installation:'routing-installation' };
+  if (session.routing && pct >= 30) {
+    rb.textContent = '→ ' + session.routing.charAt(0).toUpperCase() + session.routing.slice(1) + ' team';
+    rb.className = 'routing-badge ' + (rmap[session.routing]||'routing-sales');
+    rb.style.display = '';
+  }
+
+  if (session.internal_brief) {
+    document.getElementById('brief-content').innerHTML = `<pre class="brief-pre">${esc(session.internal_brief)}</pre>`;
+  }
+
+  document.getElementById('bp-fields').innerHTML = CL_FIELDS.map(f => {
+    const done = session[f.key];
+    return `<div class="bp-item"><span class="bp-key">${f.label}</span><span class="bp-val ${done?'':'missing'}">${done?'✓':'—'}</span></div>`;
+  }).join('');
+
+  updateChecklist(session);
+}
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function md(text) {
+  return text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>');
+}
+
+function addMsg(role, text, quoteData) {
+  const el = document.createElement('div');
+  el.className = 'msg ' + role;
+  el.innerHTML = `<div class="msg-avatar">${role==='bot'?'SD':'You'}</div><div class="msg-bubble">${md(text)}</div>`;
+  if (quoteData) el.querySelector('.msg-bubble').appendChild(buildQuoteCard(quoteData));
+  document.getElementById('messages').appendChild(el);
+  document.getElementById('messages').scrollTop = 99999;
+}
+
+function buildQuoteCard(q) {
+  const d = document.createElement('div');
+  d.className = 'quote-card';
+  const imgSrc = q.image_url || `/static/images/${(q.product_name||'single').toLowerCase().replace(/\s+/g,'_')}_door.jpg`;
+  const lines = q.lines.map(l=>`<li><span>${esc(l.label)}</span><span>£${Number(l.amount).toLocaleString('en-GB',{minimumFractionDigits:2})}</span></li>`).join('');
+  const disc = q.sale_discount>0 ? `<li class="discount"><span>Summer Sale</span><span>-£${Number(q.sale_discount).toLocaleString('en-GB',{minimumFractionDigits:2})}</span></li>` : '';
+  d.innerHTML = `
+    <div class="qc-header">
+      <img src="${imgSrc}" alt="${esc(q.product_name)}" onerror="this.style.display='none'"/>
+      <div><div class="qc-title">${esc(q.product_name)}</div><div class="qc-ref">Ref: ${q.reference}</div></div>
+    </div>
+    <ul class="qc-lines">
+      ${lines}${disc}
+      <li><span>Unit price × ${q.quantity}</span><span>£${Number(q.subtotal).toLocaleString('en-GB',{minimumFractionDigits:2})}</span></li>
+      <li><span>VAT (20%)</span><span>£${Number(q.vat).toLocaleString('en-GB',{minimumFractionDigits:2})}</span></li>
+      <li class="total"><span>Total inc. VAT</span><span>£${Number(q.total).toLocaleString('en-GB',{minimumFractionDigits:2})}</span></li>
+    </ul>
+    <div class="qc-lead">Lead time: ${q.lead_time}</div>
+    <div class="qc-cta">
+      <button class="btn-gold" onclick="bookSurvey()">Book Free Survey</button>
+      <button class="btn-outline" onclick="adjust()">Adjust</button>
+    </div>`;
+  return d;
+}
+
+function bookSurvey() { document.getElementById('user-input').value="I'd like to book a free site survey. My name is "; document.getElementById('user-input').focus(); }
+function adjust() { document.getElementById('user-input').value="Can you adjust the quote — "; document.getElementById('user-input').focus(); }
+
+function showTyping() {
+  const el = document.createElement('div');
+  el.className='msg bot'; el.id='typing';
+  el.innerHTML=`<div class="msg-avatar">SD</div><div class="msg-bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  document.getElementById('messages').appendChild(el);
+  document.getElementById('messages').scrollTop=99999;
+}
+function removeTyping() { const el=document.getElementById('typing'); if(el)el.remove(); }
+
+async function send() {
+  const inp = document.getElementById('user-input');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value='';
+  document.getElementById('send-btn').disabled=true;
+  addMsg('user', text, null);
+  history.push({role:'user', content:text});
+  showTyping();
+  try {
+    const body = {message:text, history:history.slice(-10)};
+    if (sessionId) body.session_id = sessionId;
+    const res = await fetch(`${API}/api/chat`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    const data = await res.json();
+    removeTyping();
+    addMsg('bot', data.reply, data.quote||null);
+    history.push({role:'assistant', content:data.reply});
+    if (data.session) { sessionId=data.session.session_id; updateReadiness(data.session); }
+  } catch(e) {
+    removeTyping();
+    addMsg('bot','Sorry, there was an error. Please try again or call 01785 526016.',null);
+  }
+  document.getElementById('send-btn').disabled=false;
+  inp.focus();
+}
+
+document.getElementById('send-btn').addEventListener('click', send);
+document.getElementById('user-input').addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();} });
+
+loadCatalogue();
+addMsg('bot',
+  "Hi, welcome to **Steel Door Company** — the UK's leading installer of bespoke steel doors.\n\n" +
+  "I'm your AI consultant. I'll help you get an accurate estimate and take all the details needed to move your project forward.\n\n" +
+  "**What type of project are you working on?** For example: residential, commercial, new build, or renovation?",
+  null
+);
+updateChecklist(null);
+</script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Steel Door Company — AI Consultant Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --gold: #b8922e;
+    --dark: #111;
+    --card: #1a1a1a;
+    --border: #2a2a2a;
+    --text: #e0e0e0;
+    --muted: #888;
+    --green: #22c55e;
+    --blue: #3b82f6;
+    --orange: #f59e0b;
+    --red: #ef4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--dark); color: var(--text); font-family: system-ui, sans-serif; min-height: 100vh; }
+  header {
+    background: #000;
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  header h1 { font-size: 1.1rem; color: var(--gold); letter-spacing: .02em; }
+  header span { color: var(--muted); font-size: .85rem; }
+  .nav-link {
+    margin-left: auto; color: var(--gold); text-decoration: none; font-size: .85rem;
+    border: 1px solid var(--gold); padding: 5px 12px; border-radius: 4px;
+  }
+  .main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .kpi {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 20px; display: flex; flex-direction: column; gap: 6px;
+  }
+  .kpi .label { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+  .kpi .value { font-size: 2rem; font-weight: 700; color: var(--gold); }
+  .kpi .sub { font-size: .8rem; color: var(--muted); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  @media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px;
+  }
+  .card h2 { font-size: .85rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 16px; }
+  .sessions-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+  .sessions-table th { color: var(--muted); text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); font-weight: 500; }
+  .sessions-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  .sessions-table tr:last-child td { border-bottom: none; }
+  .score-bar { background: #2a2a2a; border-radius: 4px; height: 6px; width: 80px; overflow: hidden; display: inline-block; vertical-align: middle; margin-left: 6px; }
+  .score-fill { background: var(--gold); height: 100%; border-radius: 4px; }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: .7rem;
+    font-weight: 600; text-transform: uppercase; letter-spacing: .05em;
+  }
+  .badge-sales { background: rgba(59,130,246,.2); color: var(--blue); }
+  .badge-survey { background: rgba(34,197,94,.2); color: var(--green); }
+  .badge-install { background: rgba(245,158,11,.2); color: var(--orange); }
+  .badge-care { background: rgba(239,68,68,.2); color: var(--red); }
+  .stage-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+  .stage-1 { background: #444; }
+  .stage-2 { background: var(--orange); }
+  .stage-3 { background: var(--blue); }
+  .stage-4 { background: var(--green); }
+  .loading { color: var(--muted); text-align: center; padding: 40px; }
+  .refresh-btn {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: .8rem; float: right;
+  }
+  .refresh-btn:hover { border-color: var(--gold); color: var(--gold); }
+  canvas { max-height: 200px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Steel Door Company</div>
+    <h1>AI Consultant Dashboard</h1>
+  </div>
+  <span id="last-updated"></span>
+  <a href="/" class="nav-link">Chat Demo</a>
+</header>
+<div class="main">
+  <div class="kpi-row" id="kpis">
+    <div class="kpi"><span class="label">Sessions</span><span class="value" id="kpi-sessions">—</span><span class="sub">total conversations</span></div>
+    <div class="kpi"><span class="label">With Contact</span><span class="value" id="kpi-contact">—</span><span class="sub">email collected</span></div>
+    <div class="kpi"><span class="label">Quotes Generated</span><span class="value" id="kpi-quotes">—</span><span class="sub">pricing requests</span></div>
+    <div class="kpi"><span class="label">Avg Quote Value</span><span class="value" id="kpi-avg">—</span><span class="sub">inc. VAT</span></div>
+    <div class="kpi"><span class="label">Conversion Rate</span><span class="value" id="kpi-conv">—</span><span class="sub">sessions → contacts</span></div>
+    <div class="kpi"><span class="label">Enquiries</span><span class="value" id="kpi-enq">—</span><span class="sub">form submissions</span></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Top Products Quoted</h2>
+      <canvas id="products-chart"></canvas>
+    </div>
+    <div class="card">
+      <h2>Routing Distribution</h2>
+      <canvas id="routing-chart"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Recent Sessions <button class="refresh-btn" onclick="load()">↺ Refresh</button></h2>
+    <table class="sessions-table">
+      <thead>
+        <tr>
+          <th>Session</th>
+          <th>Stage</th>
+          <th>Customer</th>
+          <th>Readiness</th>
+          <th>Product</th>
+          <th>Routing</th>
+          <th>Time</th>
+        </tr>
+      </thead>
+      <tbody id="sessions-body">
+        <tr><td colspan="7" class="loading">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+let productsChart, routingChart;
+
+function fmt(v) { return v !== null && v !== undefined ? String(v) : '—'; }
+function ago(iso) {
+  const d = new Date(iso), now = Date.now(), diff = Math.round((now - d) / 60000);
+  if (diff < 1) return 'just now';
+  if (diff < 60) return diff + 'm ago';
+  if (diff < 1440) return Math.round(diff/60) + 'h ago';
+  return Math.round(diff/1440) + 'd ago';
+}
+
+async function load() {
+  const [stats, sessions] = await Promise.all([
+    fetch('/api/dashboard/stats').then(r => r.json()),
+    fetch('/api/dashboard/sessions').then(r => r.json()),
+  ]);
+
+  // KPIs
+  document.getElementById('kpi-sessions').textContent = stats.sessions;
+  document.getElementById('kpi-contact').textContent = stats.sessions_with_contact;
+  document.getElementById('kpi-quotes').textContent = stats.quotes;
+  document.getElementById('kpi-avg').textContent = stats.avg_quote_value ? '£' + stats.avg_quote_value.toLocaleString() : '—';
+  document.getElementById('kpi-conv').textContent = stats.conversion_rate + '%';
+  document.getElementById('kpi-enq').textContent = stats.enquiries;
+  document.getElementById('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+
+  // Products chart
+  const pData = stats.top_products || [];
+  if (productsChart) productsChart.destroy();
+  productsChart = new Chart(document.getElementById('products-chart'), {
+    type: 'bar',
+    data: {
+      labels: pData.map(p => p.name),
+      datasets: [{ data: pData.map(p => p.count), backgroundColor: '#b8922e', borderRadius: 4 }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#888', font: { size: 10 } }, grid: { color: '#222' } },
+        y: { ticks: { color: '#888' }, grid: { color: '#222' } }
+      }
+    }
+  });
+
+  // Routing chart from sessions
+  const routingCounts = { sales: 0, survey: 0, installation: 0, customer_care: 0 };
+  sessions.forEach(s => { if (s.routing && routingCounts[s.routing] !== undefined) routingCounts[s.routing]++; });
+  if (routingChart) routingChart.destroy();
+  routingChart = new Chart(document.getElementById('routing-chart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Sales', 'Survey', 'Installation', 'Customer Care'],
+      datasets: [{
+        data: Object.values(routingCounts),
+        backgroundColor: ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      plugins: { legend: { labels: { color: '#888', font: { size: 11 } } } }
+    }
+  });
+
+  // Sessions table
+  const tbody = document.getElementById('sessions-body');
+  if (!sessions.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="loading">No sessions yet — start a chat to see data here</td></tr>';
+    return;
+  }
+  tbody.innerHTML = sessions.map(s => {
+    const stageDot = `<span class="stage-dot stage-${s.stage || 1}"></span>Stage ${s.stage || 1}`;
+    const scorePct = Math.min(s.readiness_score || 0, 100);
+    const scoreBar = `${scorePct}% <span class="score-bar"><span class="score-fill" style="width:${scorePct}%"></span></span>`;
+    const routingBadge = s.routing ? `<span class="badge badge-${s.routing}">${s.routing}</span>` : '—';
+    const customer = s.name || (s.email ? s.email.split('@')[0] : '—');
+    return `<tr>
+      <td style="font-family:monospace;font-size:.75rem;color:var(--muted)">${s.session_id}</td>
+      <td>${stageDot}</td>
+      <td>${customer}</td>
+      <td>${scoreBar}</td>
+      <td style="color:var(--muted)">${fmt(s.door_type)}</td>
+      <td>${routingBadge}</td>
+      <td style="color:var(--muted)">${ago(s.updated_at)}</td>
+    </tr>`;
+  }).join('');
+}
+
+load();
+setInterval(load, 30000); // auto-refresh every 30s
+</script>
+</body>
+</html>
