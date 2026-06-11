@@ -1,4 +1,5 @@
 """FastAPI application: API routes + static web chat UI."""
+import logging
 import os
 import secrets
 import uuid
@@ -10,6 +11,11 @@ try:
     load_dotenv()
 except ImportError:
     pass
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s %(name)s %(message)s",
+)
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware

@@ -828,7 +828,15 @@ def handle_chat(req: ChatRequest) -> ChatResponse:
         from .hubspot import push_to_hubspot
         _qt = quote.total if quote else None
         fire_webhook(build_internal_brief_json(s, quote_total=_qt))
-        push_to_hubspot(s, quote_total=_qt)
+        import sys as _sys
+        hs_ok = push_to_hubspot(s, quote_total=_qt)
+        if not hs_ok:
+            token_set = bool(__import__("os").environ.get("HUBSPOT_ACCESS_TOKEN"))
+            print(
+                f"[HUBSPOT SKIPPED/FAILED] session={s.session_id} score={s.readiness_score} "
+                f"token_set={token_set}",
+                file=_sys.stderr, flush=True,
+            )
 
     # Email brief to sales team once score hits 70
     if s.readiness_score >= 70 and s.email and s.internal_brief and not s.brief_email_sent:
