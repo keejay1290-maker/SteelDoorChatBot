@@ -13,7 +13,7 @@ except ImportError:
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 
@@ -134,6 +134,26 @@ def api_get_quote(reference: str) -> dict:
     if not q:
         raise HTTPException(status_code=404, detail="Quote not found")
     return q
+
+
+@app.get("/api/quote/{reference}/pdf")
+def api_quote_pdf(reference: str) -> Response:
+    row = get_quote(reference)
+    if not row:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    try:
+        import json
+        from .models import QuoteResponse
+        from .pdf import build_quote_pdf
+        quote = QuoteResponse.model_validate(json.loads(row["payload_json"]))
+        pdf_bytes = build_quote_pdf(quote)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {exc}") from exc
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="quote-{reference}.pdf"'},
+    )
 
 
 @app.post("/api/chat", response_model=ChatResponse)

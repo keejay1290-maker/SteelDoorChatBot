@@ -20,3 +20,5 @@ INTERVIEW_NOTES.md
 .vscode/
 .idea/
 .DS_Store
+
+.vercel

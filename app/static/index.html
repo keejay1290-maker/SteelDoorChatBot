@@ -467,6 +467,7 @@ function buildQuoteCard(q) {
     <div class="qc-cta">
       <button class="btn-gold" onclick="bookSurvey()">Book Free Survey</button>
       <button class="btn-outline" onclick="adjust()">Adjust</button>
+      <a class="btn-outline" href="/api/quote/${q.reference}/pdf" target="_blank" download="quote-${q.reference}.pdf">Download PDF</a>
     </div>`;
   return d;
 }

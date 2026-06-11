@@ -74,6 +74,7 @@ class ConversationSession:
     routing: Optional[str] = None            # "sales" | "survey" | "installation" | "customer_care"
     internal_brief: Optional[str] = None
     brief_email_sent: bool = False           # True after internal brief emailed to sales team
+    customer_email_sent: bool = False        # True after quote confirmation email sent to customer
     quote_reference: Optional[str] = None
     needs: list = field(default_factory=list)  # fields still needed
 

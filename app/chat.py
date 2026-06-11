@@ -335,8 +335,9 @@ def _mock_reply(s: ConversationSession, quote: Optional[QuoteResponse], text: st
         return _HELP_TEXT
 
     if intent == "greeting":
+        name_part = f", {s.name}" if s.name else ""
         return (
-            "Hi! I'm the Steel Door Company AI consultant. I can get you an instant estimate or "
+            f"Hi{name_part}! I'm the Steel Door Company AI consultant. I can get you an instant estimate or "
             "answer any questions about our range.\n\n"
             "What are you looking for today — a quote, product info, or to book a survey?"
         )
@@ -362,12 +363,13 @@ def _mock_reply(s: ConversationSession, quote: Optional[QuoteResponse], text: st
             f"  **Total: £{quote.total:,.2f} inc. VAT**\n"
             f"  Lead time: {quote.lead_time}"
         )
+        name_prefix = f"{s.name}, " if s.name else ""
         cta = (
-            "\n\nTo confirm this and book your free site survey, could you share "
+            f"\n\n{name_prefix}to confirm this and book your free site survey, could you share "
             + f"**{contact_missing[0]}**?"
             if contact_missing else
-            f"\n\nAll set! Readiness **{s.readiness_score}/100**. The team will be in touch. "
-            "Call **01785 526016** for anything urgent."
+            f"\n\nAll set{', ' + s.name if s.name else ''}! Readiness **{s.readiness_score}/100**. "
+            "The team will be in touch. Call **01785 526016** for anything urgent."
         )
         return (
             f"Here's your indicative estimate (ref **{quote.reference}**):\n\n"
@@ -400,6 +402,15 @@ def _mock_reply(s: ConversationSession, quote: Optional[QuoteResponse], text: st
                 "The team will be in touch within 1 business day to schedule your free site survey."
             )
         return "Could you give me a bit more detail about the door you need so I can get a quote together?"
+
+    # --- Proactive contact nudge (article insight: 90% prefer personalized experience) ---
+    # When spec is taking shape but customer hasn't shared contact, pivot earlier
+    if 40 <= s.readiness_score <= 65 and not s.email and s.door_type and not quote:
+        name_part = f" {s.name}" if s.name else ""
+        return (
+            f"Great progress{name_part}! Before we go further — what email address should I send "
+            "the quote to? I'll make sure you have a copy the moment it's ready."
+        )
 
     # --- Spec-related messages — ask for next missing field ---
     missing = _what_is_missing(s)
@@ -573,6 +584,83 @@ def _format_quote(quote: QuoteResponse) -> str:
 # Main handler
 # ---------------------------------------------------------------------------
 
+def _llm_extract_fields(provider: str, cfg: dict, text: str, s: ConversationSession) -> ConversationSession:
+    """One JSON-mode LLM call to extract all spec + contact fields at once.
+
+    Falls back silently on any error — the regex pass already ran, so this
+    only fills in fields the regex missed. LLM never sets prices.
+    """
+    import httpx
+    import json as _json
+
+    api_key = os.environ.get(cfg["key_env"], "")
+    if not api_key:
+        return s
+
+    schema_hint = (
+        '{"door_set":"single|double|null","door_type":"internal|external|fire_rated|wine_room|null",'
+        '"mechanism":"hinged|sliding|concertina|null","width_mm":"number|null","height_mm":"number|null",'
+        '"glass":"clear|reeded|frosted|bespoke|null","ral_colour":"string|null",'
+        '"fire_rating":"none|FD30|FD60","quantity":"number|null",'
+        '"name":"string|null","email":"email string|null","phone":"string|null",'
+        '"postcode":"UK postcode|null","project_context":"residential|commercial|null",'
+        '"installation_required":"true|false|null","threshold":"flush|weathered|step_over"}'
+    )
+    system = (
+        "Extract structured data from this customer message. "
+        "Return ONLY valid JSON matching the schema below. "
+        "Use null for any field not mentioned. Do NOT invent or guess values.\n"
+        "Schema: " + schema_hint
+    )
+
+    base_url = os.environ.get(cfg["base_url_env"], cfg["default_base_url"])
+    model = os.environ.get(cfg["model_env"], cfg["default_model"])
+
+    try:
+        resp = httpx.post(
+            f"{base_url}/chat/completions",
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": text},
+                ],
+                "max_tokens": 300,
+                "response_format": {"type": "json_object"},
+            },
+            timeout=12.0,
+        )
+        resp.raise_for_status()
+        extracted = _json.loads(resp.json()["choices"][0]["message"]["content"])
+    except Exception:
+        return s  # regex pass is sufficient; don't break the chat
+
+    # Merge: only fill fields that regex left empty; never overwrite existing values
+    _bool_map = {"true": True, "false": False, True: True, False: False}
+    for field, raw in extracted.items():
+        if raw is None or raw == "null":
+            continue
+        if not hasattr(s, field) or getattr(s, field) is not None:
+            continue  # already set by regex or not a session field
+        if field in ("width_mm", "height_mm", "quantity"):
+            try:
+                setattr(s, field, float(raw) if field != "quantity" else int(raw))
+            except (TypeError, ValueError):
+                pass
+        elif field == "installation_required":
+            val = _bool_map.get(raw)
+            if val is not None:
+                s.installation_required = val
+        elif field == "threshold":
+            if raw in ("flush", "weathered", "step_over"):
+                s.threshold = raw
+        else:
+            setattr(s, field, str(raw).strip() or None)
+
+    return s
+
+
 def _normalise_text(text: str) -> str:
     """Light spell-normalisation: expand common abbreviations + fix obvious typos."""
     replacements = {
@@ -609,8 +697,12 @@ def handle_chat(req: ChatRequest) -> ChatResponse:
     normalised = _normalise_text(req.message)
     prev_quote_ref = s.quote_reference
 
-    # Extract fields from this message
+    # Extract fields from this message — regex first, then LLM enrichment
     s = _extract_fields(normalised, s)
+    provider = os.environ.get("LLM_PROVIDER", "mock").lower()
+    cfg = _PROVIDERS.get(provider)
+    if cfg and os.environ.get(cfg["key_env"]):
+        s = _llm_extract_fields(provider, cfg, normalised, s)
 
     # Try to build a quote if enough spec is present
     quote: Optional[QuoteResponse] = None
@@ -656,13 +748,28 @@ def handle_chat(req: ChatRequest) -> ChatResponse:
         if sent:
             s.brief_email_sent = True
 
+    # EMAIL-002: send quote copy to customer on confirmation intent
+    intent = _classify_intent(normalised.lower().strip())
+    if (
+        intent == "confirmation"
+        and s.email
+        and s.quote_reference
+        and quote
+        and not s.customer_email_sent
+    ):
+        from .email_sender import send_customer_quote_email
+        sent = send_customer_quote_email(
+            customer_email=s.email,
+            customer_name=s.name,
+            quote=quote,
+        )
+        if sent:
+            s.customer_email_sent = True
+
     missing = _what_is_missing(s)
     s.needs = missing[:5]
 
     # Generate reply
-    provider = os.environ.get("LLM_PROVIDER", "mock").lower()
-    cfg = _PROVIDERS.get(provider)
-
     user_content = normalised
     if quote and new_quote:
         user_content += (
