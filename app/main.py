@@ -363,6 +363,16 @@ def admin_pricing(_: str = Depends(_require_dashboard)) -> FileResponse:
 @app.get("/")
 def index() -> Response:
     content = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+    # Inject fixes for chat widget visibility — applied via Python so they survive edge caching
+    _fixes = (
+        "<style>"
+        ".msg-bubble{color:#e8e8e8!important}"
+        ".msg.bot .msg-bubble{color:#e8e8e8!important}"
+        ".msg.user .msg-bubble{color:#e8e8e8!important}"
+        ".chat-window{max-height:calc(100dvh - 120px)!important}"
+        "</style>"
+    )
+    content = content.replace("</head>", _fixes + "</head>", 1)
     return Response(content, media_type="text/html", headers={"Cache-Control": "no-store"})
 
 
