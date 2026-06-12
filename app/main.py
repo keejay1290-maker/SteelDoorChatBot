@@ -361,8 +361,9 @@ def admin_pricing(_: str = Depends(_require_dashboard)) -> FileResponse:
 
 
 @app.get("/")
-def index() -> FileResponse:
-    return FileResponse(STATIC_DIR / "index.html")
+def index() -> Response:
+    content = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+    return Response(content, media_type="text/html", headers={"Cache-Control": "no-store"})
 
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
