@@ -38,7 +38,7 @@ def init_db() -> None:
         )
         conn.execute(
             f"""
-            CREATE TABLE IF NOT EXISTS enquiries (
+            CREATE TABLE IF NOT EXISTS sai_enquiries (
                 id {AUTOINC_PK},
                 reference TEXT NOT NULL,
                 created_at TEXT NOT NULL,
@@ -54,7 +54,7 @@ def init_db() -> None:
         )
         conn.execute(
             f"""
-            CREATE TABLE IF NOT EXISTS quotes (
+            CREATE TABLE IF NOT EXISTS sai_quotes (
                 id {AUTOINC_PK},
                 reference TEXT NOT NULL UNIQUE,
                 created_at TEXT NOT NULL,
@@ -120,7 +120,7 @@ def save_enquiry(enquiry: EnquiryRequest, reference: str) -> int:
         enquiry.quote_reference,
         enquiry.quote_total,
     )
-    cols = ("INSERT INTO enquiries "
+    cols = ("INSERT INTO sai_enquiries "
             "(reference, created_at, name, email, phone, postcode, message, "
             "quote_reference, quote_total) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
     with _connect() as conn:
@@ -133,7 +133,7 @@ def save_enquiry(enquiry: EnquiryRequest, reference: str) -> int:
 
 def save_quote(quote: QuoteResponse) -> None:
     """Persist a quote for audit / follow-up. Silently skips duplicate references."""
-    cols = ("quotes (reference, created_at, product_name, total, subtotal, vat, "
+    cols = ("sai_quotes (reference, created_at, product_name, total, subtotal, vat, "
             "sale_discount, quantity, lead_time, payload_json) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
     if db.IS_POSTGRES:
@@ -161,35 +161,35 @@ def save_quote(quote: QuoteResponse) -> None:
 
 def count_enquiries() -> int:
     with _connect() as conn:
-        row = conn.execute("SELECT COUNT(*) AS n FROM enquiries").fetchone()
+        row = conn.execute("SELECT COUNT(*) AS n FROM sai_enquiries").fetchone()
         return int(row["n"]) if row else 0
 
 
 def count_quotes() -> int:
     with _connect() as conn:
-        row = conn.execute("SELECT COUNT(*) AS n FROM quotes").fetchone()
+        row = conn.execute("SELECT COUNT(*) AS n FROM sai_quotes").fetchone()
         return int(row["n"]) if row else 0
 
 
 def get_enquiry(enquiry_id: int) -> Optional[dict]:
     with _connect() as conn:
         row = conn.execute(
-            q("SELECT * FROM enquiries WHERE id = ?"), (enquiry_id,)
+            q("SELECT * FROM sai_enquiries WHERE id = ?"), (enquiry_id,)
         ).fetchone()
         return dict(row) if row else None
 
 
 def get_dashboard_stats() -> dict:
     with _connect() as conn:
-        n_enquiries = conn.execute("SELECT COUNT(*) AS n FROM enquiries").fetchone()["n"]
-        n_quotes = conn.execute("SELECT COUNT(*) AS n FROM quotes").fetchone()["n"]
+        n_enquiries = conn.execute("SELECT COUNT(*) AS n FROM sai_enquiries").fetchone()["n"]
+        n_quotes = conn.execute("SELECT COUNT(*) AS n FROM sai_quotes").fetchone()["n"]
         n_sessions = conn.execute("SELECT COUNT(*) AS n FROM sessions").fetchone()["n"]
-        avg_total = conn.execute("SELECT AVG(total) AS v FROM quotes").fetchone()["v"]
+        avg_total = conn.execute("SELECT AVG(total) AS v FROM sai_quotes").fetchone()["v"]
         top_products = conn.execute(
-            "SELECT product_name, COUNT(*) AS n FROM quotes GROUP BY product_name ORDER BY n DESC LIMIT 5"
+            "SELECT product_name, COUNT(*) AS n FROM sai_quotes GROUP BY product_name ORDER BY n DESC LIMIT 5"
         ).fetchall()
         recent_quotes = conn.execute(
-            "SELECT reference, created_at, product_name, total, quantity FROM quotes ORDER BY created_at DESC LIMIT 10"
+            "SELECT reference, created_at, product_name, total, quantity FROM sai_quotes ORDER BY created_at DESC LIMIT 10"
         ).fetchall()
         email_expr = json_field("data_json", "email")
         sessions_with_email = conn.execute(
@@ -203,7 +203,7 @@ def get_dashboard_stats() -> dict:
         ).fetchall()
         daily_revenue = conn.execute(
             f"SELECT {as_date('created_at')} AS day, SUM(total) AS revenue, COUNT(*) AS n "
-            f"FROM quotes WHERE {as_date('created_at')} >= {date_days_ago(13)} "
+            f"FROM sai_quotes WHERE {as_date('created_at')} >= {date_days_ago(13)} "
             f"GROUP BY {as_date('created_at')} ORDER BY day"
         ).fetchall()
     return {
@@ -224,7 +224,7 @@ def get_all_quotes(limit: int = 5000) -> list[dict]:
     with _connect() as conn:
         rows = conn.execute(
             q("SELECT reference, created_at, product_name, total, subtotal, vat, "
-              "sale_discount, quantity, lead_time FROM quotes ORDER BY created_at DESC LIMIT ?"),
+              "sale_discount, quantity, lead_time FROM sai_quotes ORDER BY created_at DESC LIMIT ?"),
             (limit,)
         ).fetchall()
     return [dict(r) for r in rows]
@@ -233,7 +233,7 @@ def get_all_quotes(limit: int = 5000) -> list[dict]:
 def get_quote(reference: str) -> Optional[dict]:
     with _connect() as conn:
         row = conn.execute(
-            q("SELECT * FROM quotes WHERE reference = ?"), (reference,)
+            q("SELECT * FROM sai_quotes WHERE reference = ?"), (reference,)
         ).fetchone()
         return dict(row) if row else None
 
