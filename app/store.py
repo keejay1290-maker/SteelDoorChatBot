@@ -6,11 +6,7 @@ in production (when ``DATABASE_URL`` is set). All SQL here is written once with
 """
 from __future__ import annotations
 
-import json
-import os
-import sqlite3
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from . import db
 from .db import AUTOINC_PK, NOW_DEFAULT, as_date, date_days_ago, json_field, q
@@ -111,7 +107,7 @@ def init_db() -> None:
 def save_enquiry(enquiry: EnquiryRequest, reference: str) -> int:
     params = (
         reference,
-        datetime.now(timezone.utc).isoformat(),
+        datetime.now(UTC).isoformat(),
         enquiry.name,
         enquiry.email,
         enquiry.phone,
@@ -142,7 +138,7 @@ def save_quote(quote: QuoteResponse) -> None:
         sql = f"INSERT OR IGNORE INTO {cols}"
     params = (
         quote.reference,
-        datetime.now(timezone.utc).isoformat(),
+        datetime.now(UTC).isoformat(),
         quote.product_name,
         quote.total,
         quote.subtotal,
@@ -171,7 +167,7 @@ def count_quotes() -> int:
         return int(row["n"]) if row else 0
 
 
-def get_enquiry(enquiry_id: int) -> Optional[dict]:
+def get_enquiry(enquiry_id: int) -> dict | None:
     with _connect() as conn:
         row = conn.execute(
             q("SELECT * FROM sai_enquiries WHERE id = ?"), (enquiry_id,)
@@ -230,7 +226,7 @@ def get_all_quotes(limit: int = 5000) -> list[dict]:
     return [dict(r) for r in rows]
 
 
-def get_quote(reference: str) -> Optional[dict]:
+def get_quote(reference: str) -> dict | None:
     with _connect() as conn:
         row = conn.execute(
             q("SELECT * FROM sai_quotes WHERE reference = ?"), (reference,)
@@ -251,7 +247,7 @@ def get_pricing_overrides() -> dict[str, float]:
 
 def set_pricing_field(key: str, value: float, description: str = "") -> None:
     """Upsert a single pricing key, recording history."""
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     with _connect() as conn:
         existing = conn.execute(
             q("SELECT value FROM pricing_settings WHERE key = ?"), (key,)
